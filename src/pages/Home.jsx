@@ -1,24 +1,36 @@
-import React from 'react';
+
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Search, ShoppingCart, 
   ShieldCheck, Truck, Clock, CheckCircle, 
-  ArrowRight, Shield, Zap, Laptop, Briefcase, Globe
+  ArrowRight, Shield, Zap, Laptop, Briefcase, Globe, Flame
 } from 'lucide-react';
+import heroImage from '../assets/images/img.jpg';
+import ProductArt from '../components/ProductArt';
+import { customerProducts, formatPrice } from '../data/customerProducts';
+import { useCart } from '../hooks/useCart';
+
 
 const Home = () => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const navigate = useNavigate();
+  const { addItem } = useCart();
+
   return (
     <div className="min-h-screen bg-white font-sans text-gray-900">
       
       {/* Hero Section */}
-      <section className="relative min-h-[500px] md:h-[550px] bg-slate-900 flex flex-col items-center justify-center pt-16 pb-12 md:pt-10">
+      <section className="relative min-h-[500px] md:h-[550px] bg-transparent flex flex-col items-center justify-center pt-16 pb-12 md:pt-10 overflow-hidden">
+        {/* Background image (no overlay) */}
         <div 
-          className="absolute inset-0 bg-cover bg-center opacity-40 mix-blend-overlay"
-          style={{ backgroundImage: "url('https://images.unsplash.com/photo-1586528116311-ad8ed7c663be?q=80&w=2070&auto=format&fit=crop')" }}
+          className="absolute inset-0 bg-cover bg-center blur-[2px] scale-105"
+          style={{ backgroundImage: `url(${heroImage})` }}
         ></div>
         
         <div className="relative z-10 flex flex-col items-center px-4 w-full max-w-5xl">
           <div className="bg-orange-500 text-white text-[10px] md:text-[11px] font-bold tracking-wider uppercase px-3 py-1.5 rounded-full mb-6 flex items-center gap-2 text-center">
-            <span>🔥</span> AFRICA'S LARGEST B2B HUB
+            <Flame aria-hidden="true" className="h-3 w-3" /> AFRICA'S LARGEST B2B HUB
           </div>
           
           <h1 className="text-3xl sm:text-4xl md:text-6xl font-extrabold text-white text-center leading-tight mb-8 md:mb-10">
@@ -26,31 +38,35 @@ const Home = () => {
           </h1>
           
           {/* Responsive Search Input */}
-          <div className="w-full max-w-3xl bg-white p-2 rounded-2xl md:rounded-full flex flex-col md:flex-row items-center shadow-xl mb-10 md:mb-12 gap-2 md:gap-0">
+          <form onSubmit={(event) => { event.preventDefault(); navigate(`/marketplace?q=${encodeURIComponent(searchTerm.trim())}`); }} className="w-full max-w-3xl bg-white p-2 rounded-2xl md:rounded-full flex flex-col md:flex-row items-center shadow-xl mb-10 md:mb-12 gap-2 md:gap-0">
             <div className="flex w-full md:w-auto flex-1 items-center px-2 md:px-0">
               <Search className="text-gray-400 md:ml-4 mr-2 h-5 w-5 shrink-0" />
               <input 
                 type="text" 
                 placeholder="What are you sourcing for today?" 
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
                 className="w-full py-3 px-2 text-gray-700 focus:outline-none text-sm md:text-base"
               />
             </div>
-            <button className="w-full md:w-auto bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-8 rounded-xl md:rounded-full transition-colors">
+            <button type="submit" className="w-full md:w-auto bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-8 rounded-xl md:rounded-full transition-colors">
               Search Marketplace
             </button>
-          </div>
+          </form>
           
           {/* Category Pills */}
           <div className="flex flex-wrap justify-center gap-2 md:gap-4 w-full">
             {[
-              { name: 'Electronics', icon: Zap },
-              { name: 'Fashion', icon: Briefcase },
-              { name: 'Home & Office', icon: Laptop },
-              { name: 'Industrial', icon: Zap },
-              { name: 'Global Sourcing', icon: Globe },
+              { name: 'Electronics', category: 'Electronics', icon: Zap },
+              { name: 'Workwear', category: 'Workwear', icon: Briefcase },
+              { name: 'Home & Office', category: 'Logistics Supplies', icon: Laptop },
+              { name: 'Industrial', category: 'Industrial Tools', icon: Zap },
+              { name: 'Global Sourcing', category: 'Logistics Supplies', icon: Globe },
             ].map((cat, idx) => (
               <button 
                 key={idx} 
+                onClick={() => navigate(`/marketplace?category=${encodeURIComponent(cat.category)}`)}
+                type="button"
                 className="flex items-center gap-1.5 md:gap-2 px-3 py-2 md:px-5 md:py-2.5 bg-white/10 backdrop-blur-sm border border-white/20 text-white rounded-md hover:bg-white/20 transition-all text-xs md:text-sm font-medium"
               >
                 <cat.icon className="h-3 w-3 md:h-4 md:w-4 shrink-0" />
@@ -92,30 +108,26 @@ const Home = () => {
             <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">Today's Flash Deals</h2>
             <p className="text-sm md:text-base text-gray-500">Limited-time offers from our top-performing global and local vendors.</p>
           </div>
-          <button className="text-green-600 font-bold text-xs md:text-sm uppercase tracking-wide hover:underline flex items-center gap-1 shrink-0">
+          <button onClick={() => navigate('/marketplace')} className="text-green-600 font-bold text-xs md:text-sm uppercase tracking-wide hover:underline flex items-center gap-1 shrink-0">
             VIEW DEALS <ArrowRight size={16} />
           </button>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {[
-            { tag: '30% OFF', category: 'INDUSTRIAL SOLUTIONS', name: 'Premium Solar Panels', price: '$299.00', img: 'bg-stone-300' },
-            { tag: 'FREE TAGS', category: 'BUILDING MATERIALS', name: 'Industrial Grade Drills', price: '$145.50', img: 'bg-red-200' },
-            { tag: 'WHOLESALE', category: 'OFFICE SOLUTIONS', name: 'Smart Logistics Hub', price: '$890.00', img: 'bg-slate-200' },
-            { tag: 'BULK DISCOUNT', category: 'OFFICE FURNITURE', name: 'Ergonomic Workstations', price: '$210.00', img: 'bg-stone-200' },
-          ].map((product, idx) => (
+          {customerProducts.slice(0, 4).map((product, idx) => (
             <div key={idx} className="border border-gray-100 rounded-2xl overflow-hidden hover:shadow-xl transition-shadow bg-white flex flex-col group">
-              <div className={`h-48 relative ${product.img} flex items-center justify-center overflow-hidden`}>
+              <div onClick={() => navigate(`/products/${product.id}`)} className="relative h-48 cursor-pointer overflow-hidden">
+                <ProductArt product={product} className="h-full w-full" />
                 <div className="absolute top-3 left-3 bg-orange-500 text-white text-[10px] font-bold px-2 py-1 rounded">
-                  {product.tag}
+                  {idx === 0 ? 'TOP PICK' : idx === 1 ? 'BEST SELLER' : 'VERIFIED'}
                 </div>
               </div>
               <div className="p-5 flex flex-col flex-1">
                 <p className="text-green-600 text-[10px] font-bold tracking-wider mb-1">{product.category}</p>
-                <h3 className="font-bold text-gray-900 mb-4">{product.name}</h3>
+                <button type="button" onClick={() => navigate(`/products/${product.id}`)} className="text-left font-bold text-gray-900 mb-4 hover:text-green-700">{product.name}</button>
                 <div className="flex justify-between items-center mt-auto">
-                  <span className="text-lg font-bold text-gray-900">{product.price}</span>
-                  <button className="h-10 w-10 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-green-50 hover:text-green-600 hover:border-green-600 transition-colors">
+                  <span className="text-lg font-bold text-gray-900">{formatPrice(product.price)}</span>
+                  <button onClick={() => addItem(product)} aria-label={`Add ${product.name} to cart`} className="h-10 w-10 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-green-50 hover:text-green-600 hover:border-green-600 transition-colors">
                     <ShoppingCart size={18} />
                   </button>
                 </div>
@@ -193,12 +205,12 @@ const Home = () => {
           </div>
           
           <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto shrink-0">
-            <button className="w-full sm:w-auto bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 md:py-4 px-6 md:px-8 rounded-lg transition-colors whitespace-nowrap text-sm md:text-base">
-              Create Vendor Account
+            <button onClick={() => navigate('/marketplace')} className="w-full sm:w-auto bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 md:py-4 px-6 md:px-8 rounded-lg transition-colors whitespace-nowrap text-sm md:text-base">
+              Explore Marketplace
             </button>
-            <button className="w-full sm:w-auto bg-transparent border border-white hover:bg-white/10 text-white font-bold py-3 md:py-4 px-6 md:px-8 rounded-lg transition-colors whitespace-nowrap text-sm md:text-base">
+            <a href="mailto:sales@tradesphere.africa" className="w-full sm:w-auto bg-transparent border border-white hover:bg-white/10 text-white font-bold py-3 md:py-4 px-6 md:px-8 rounded-lg transition-colors whitespace-nowrap text-sm md:text-base text-center">
               Talk to Sales
-            </button>
+            </a>
           </div>
         </div>
       </section>

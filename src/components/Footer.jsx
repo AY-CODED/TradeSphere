@@ -1,6 +1,5 @@
-import React from 'react';
 import { Globe } from 'lucide-react';
-import Logo from '../assets/Logo.png';
+import Logo from '../assets/images/Logo.png';
 
 const Footer = () => {
   return (
