@@ -6,25 +6,28 @@ TradeSphere is a React application built with Vite.
 
 ```text
 src/
-├── app/                  # Application setup, routes, layout, and providers
-│   ├── routes/
-│   ├── App.jsx
-│   ├── layout.jsx
-│   ├── providers.jsx
-│   └── styles.css
-├── features/             # Self-contained product domains
-│   ├── account/          # Buyer profile and business verification
-│   ├── cart/
-│   ├── checkout/
-│   ├── marketplace/
-│   └── orders/
-├── shared/               # Reusable components and shared assets
-│   ├── assets/
-│   └── components/
+├── api/                  # API calls and related configuration
+├── assets/               # Images, fonts, and other static files
+├── components/
+│   ├── layout/           # Shared page layout components
+│   └── ui/               # Reusable UI components
+├── context/              # Global React Context state
+├── data/                 # Product catalog and mock data
+├── hooks/                # Reusable hooks, including useTheme
+├── pages/                # Application pages and route definitions
+├── redux/                # Reserved for Redux state if introduced
+├── services/             # External service integrations
+├── utils/                # Shared utility functions
+├── App.jsx
+├── index.css
 └── main.jsx              # Vite application entry point
 ```
 
-Feature-specific pages, hooks, context, and data live alongside their feature. Shared UI and application-wide setup live outside the feature modules.
+The app uses React Context for cart state and does not currently require Redux or external API services.
+
+## Theme
+
+`useTheme()` provides `theme`, `setTheme`, and `toggleTheme` to components inside the app. The selected light or dark theme is saved in local storage; first-time visitors inherit their system preference. Shared color tokens are defined at the top of `src/index.css`, including `--brand-600`, `--brand-700`, and `--brand-800`.
 
 ## Commands
 
