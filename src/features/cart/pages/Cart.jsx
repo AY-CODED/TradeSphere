@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Heart, ShieldCheck, Store, Trash2, Truck } from 'lucide-react';
-import ProductArt from '../components/ProductArt';
-import { formatPrice } from '../data/customerProducts';
+import ProductArt from '../../../shared/components/ProductArt';
+import { formatPrice } from '../../marketplace/data/customerProducts';
 import { useCart } from '../hooks/useCart';
 
 const Cart = () => {

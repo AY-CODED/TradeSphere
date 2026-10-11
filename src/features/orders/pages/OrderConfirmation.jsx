@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { ArrowRight, CheckCircle, Clock3, Download, MapPin, PackageCheck, ShieldCheck, Truck } from 'lucide-react';
-import { formatPrice } from '../data/customerProducts';
+import { formatPrice } from '../../marketplace/data/customerProducts';
 
 const OrderConfirmation = () => {
   const location = useLocation();

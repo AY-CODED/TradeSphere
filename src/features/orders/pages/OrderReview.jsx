@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Camera, CheckCircle, Clock3, Eye, Flag, MessageCircle, Package, ShieldCheck, Truck } from 'lucide-react';
-import { customerProducts } from '../data/customerProducts';
-import ProductArt from '../components/ProductArt';
+import { customerProducts } from '../../marketplace/data/customerProducts';
+import ProductArt from '../../../shared/components/ProductArt';
 
 const checklistItems = [
   'Correct product and model',

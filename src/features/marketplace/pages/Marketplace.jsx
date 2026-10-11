@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Check, ChevronDown, Heart, LayoutGrid, List, ShieldCheck, SlidersHorizontal, Star } from 'lucide-react';
-import ProductArt from '../components/ProductArt';
+import ProductArt from '../../../shared/components/ProductArt';
 import { customerProducts, formatPrice } from '../data/customerProducts';
-import { useCart } from '../hooks/useCart';
+import { useCart } from '../../cart/hooks/useCart';
 
 const Marketplace = () => {
   const [searchParams, setSearchParams] = useSearchParams();

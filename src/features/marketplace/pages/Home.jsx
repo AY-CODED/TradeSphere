@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -6,17 +5,15 @@ import {
   ShieldCheck, Truck, Clock, CheckCircle, 
   ArrowRight, Shield, Zap, Laptop, Briefcase, Globe, Flame
 } from 'lucide-react';
-import heroImage from '../assets/images/img.jpg';
-import ProductArt from '../components/ProductArt';
+import heroImage from '../assets/img.jpg';
+import ProductArt from '../../../shared/components/ProductArt';
 import { customerProducts, formatPrice } from '../data/customerProducts';
-import { useCart } from '../hooks/useCart';
-
+import { useCart } from '../../cart/hooks/useCart';
 
 const Home = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const navigate = useNavigate();
   const { addItem } = useCart();
-
   return (
     <div className="min-h-screen bg-white font-sans text-gray-900">
       
@@ -37,7 +34,6 @@ const Home = () => {
             Driving African Trade with<br className="hidden md:block"/> Efficiency and Reliability
           </h1>
           
-          {/* Responsive Search Input */}
           <form onSubmit={(event) => { event.preventDefault(); navigate(`/marketplace?q=${encodeURIComponent(searchTerm.trim())}`); }} className="w-full max-w-3xl bg-white p-2 rounded-2xl md:rounded-full flex flex-col md:flex-row items-center shadow-xl mb-10 md:mb-12 gap-2 md:gap-0">
             <div className="flex w-full md:w-auto flex-1 items-center px-2 md:px-0">
               <Search className="text-gray-400 md:ml-4 mr-2 h-5 w-5 shrink-0" />
@@ -54,7 +50,6 @@ const Home = () => {
             </button>
           </form>
           
-          {/* Category Pills */}
           <div className="flex flex-wrap justify-center gap-2 md:gap-4 w-full">
             {[
               { name: 'Electronics', category: 'Electronics', icon: Zap },
@@ -141,7 +136,6 @@ const Home = () => {
       <section className="bg-slate-50 py-16 md:py-24">
         <div className="max-w-7xl mx-auto px-4 md:px-6 grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
           
-          {/* Graphic Side */}
           <div className="bg-[#fcebb6] rounded-3xl h-[400px] lg:h-[600px] p-8 flex flex-col items-center justify-center relative overflow-hidden shadow-sm order-2 lg:order-1">
              <div className="relative z-10 text-center w-full">
                 <div className="w-48 h-56 md:w-64 md:h-72 mx-auto relative flex justify-center">
@@ -153,7 +147,6 @@ const Home = () => {
              </div>
           </div>
 
-          {/* Text Content */}
           <div className="flex flex-col items-start order-1 lg:order-2">
             <div className="inline-flex items-center border border-green-200 bg-green-50 text-green-700 text-xs font-bold px-3 py-1 rounded-full mb-6 tracking-wide">
                <ShieldCheck size={14} className="mr-1.5" /> TRADE PROTECTION

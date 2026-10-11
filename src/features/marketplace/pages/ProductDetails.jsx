@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowRight, CheckCircle, Heart, Share2, ShieldCheck, ShoppingCart, Star, Truck } from 'lucide-react';
-import ProductArt from '../components/ProductArt';
+import ProductArt from '../../../shared/components/ProductArt';
 import { customerProducts, formatPrice } from '../data/customerProducts';
-import { useCart } from '../hooks/useCart';
+import { useCart } from '../../cart/hooks/useCart';
 
 const ProductDetails = () => {
   const { productId } = useParams();

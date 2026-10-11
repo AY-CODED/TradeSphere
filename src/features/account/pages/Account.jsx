@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ArrowRight, Bell, CheckCircle, ChevronRight, CreditCard, MapPin, Package, ShieldCheck, Wallet } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { formatPrice } from '../data/customerProducts';
+import { formatPrice } from '../../marketplace/data/customerProducts';
 
 const menuItems = [
   { label: 'Account info', icon: CheckCircle },

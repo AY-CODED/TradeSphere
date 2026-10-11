@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Check, CreditCard, MapPin, ShieldCheck, Truck } from 'lucide-react';
-import { formatPrice } from '../data/customerProducts';
-import { useCart } from '../hooks/useCart';
+import { formatPrice } from '../../marketplace/data/customerProducts';
+import { useCart } from '../../cart/hooks/useCart';
 
 const deliveryOptions = [
   { id: 'standard', name: 'Standard delivery', detail: '4–7 business days · TradeSphere Verified Logistics', price: 45 },
