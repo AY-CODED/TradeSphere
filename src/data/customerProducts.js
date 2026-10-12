@@ -86,6 +86,20 @@ export const customerProducts = [
     tone: 'from-cyan-200 via-slate-300 to-slate-500',
     description: 'Strong stretch wraps to secure palletized goods during regional freight.',
   },
+  {
+    id: 'ergonomic-workstation',
+    name: 'Ergonomic Workstation for Modern Offices',
+    category: 'Home & Office',
+    price: 210,
+    vendor: 'Artisanal Home Goods',
+    location: 'Accra, Ghana',
+    rating: 4.7,
+    reviews: 31,
+    stock: 16,
+    icon: 'package',
+    tone: 'from-stone-200 via-slate-300 to-slate-500',
+    description: 'A practical, adjustable workstation designed for productive commercial and home offices.',
+  },
 ];
 
 export const formatPrice = (amount) =>
