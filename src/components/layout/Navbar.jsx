@@ -3,7 +3,9 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Bell, Mail, Menu, Moon, Search, ShoppingCart, Sun, X } from 'lucide-react';
 import Logo from '../../assets/images/Logo.png';
 import { useCart } from '../../hooks/useCart';
+import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../hooks/useTheme';
+import LogoutButton from '../auth/LogoutButton';
 
 const navigation = [
   { label: 'Marketplace', to: '/marketplace', active: (pathname) => pathname.startsWith('/marketplace') || pathname.startsWith('/products/') },
@@ -15,8 +17,11 @@ const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const { itemCount } = useCart();
   const { theme, toggleTheme } = useTheme();
+  const { user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const accountName = user?.fullName || user?.name || user?.email || 'Account';
+  const accountInitials = accountName.split(/\s+/).slice(0, 2).map((part) => part[0]).join('').toUpperCase();
 
   const submitSearch = (event) => {
     event.preventDefault();
@@ -84,10 +89,19 @@ const Navbar = () => {
           <button type="button" aria-label="Notifications" className="rounded p-1.5 text-slate-600 transition-colors hover:bg-emerald-50 hover:text-emerald-700">
             <Bell className="h-4 w-4" />
           </button>
-          <Link to="/account" className="flex shrink-0 items-center gap-2 border-l border-slate-300 pl-3 text-xs font-medium text-slate-800">
-            <span className="grid h-[22px] w-[22px] place-items-center rounded-full bg-emerald-700 text-[9px] font-bold text-white">JD</span>
-            <span className="hidden whitespace-nowrap sm:inline">John Doe</span>
-          </Link>
+          {user ? (
+            <>
+              <Link to="/account" className="flex shrink-0 items-center gap-2 border-l border-slate-300 pl-3 text-xs font-medium text-slate-800">
+                <span className="grid h-[22px] w-[22px] place-items-center rounded-full bg-emerald-700 text-[9px] font-bold text-white">{accountInitials}</span>
+                <span className="hidden max-w-28 truncate whitespace-nowrap sm:inline">{accountName}</span>
+              </Link>
+              <LogoutButton className="hidden rounded px-2 py-1.5 text-xs font-semibold text-slate-600 hover:bg-emerald-50 hover:text-emerald-800 sm:inline-flex" />
+            </>
+          ) : (
+            <Link to="/signin" className="hidden whitespace-nowrap text-xs font-semibold text-emerald-800 hover:underline sm:inline">
+              Sign in
+            </Link>
+          )}
           <button
             type="button"
             aria-label={isOpen ? 'Close navigation' : 'Open navigation'}
@@ -122,9 +136,23 @@ const Navbar = () => {
             <a href="mailto:support@tradesphere.africa" onClick={() => setIsOpen(false)} className="rounded-md px-3 py-2.5 text-sm font-semibold text-slate-700 hover:bg-emerald-50">
               Support
             </a>
-            <Link to="/account" onClick={() => setIsOpen(false)} className="rounded-md px-3 py-2.5 text-sm font-semibold text-slate-700 hover:bg-emerald-50">
-              My account
-            </Link>
+            {user ? (
+              <>
+                <Link to="/account" onClick={() => setIsOpen(false)} className="rounded-md px-3 py-2.5 text-sm font-semibold text-slate-700 hover:bg-emerald-50">
+                  My account
+                </Link>
+                <LogoutButton className="rounded-md px-3 py-2.5 text-left text-sm font-semibold text-slate-700 hover:bg-emerald-50 disabled:opacity-60" />
+              </>
+            ) : (
+              <>
+                <Link to="/signin" onClick={() => setIsOpen(false)} className="rounded-md px-3 py-2.5 text-sm font-semibold text-slate-700 hover:bg-emerald-50">
+                  Sign in
+                </Link>
+                <Link to="/signup" onClick={() => setIsOpen(false)} className="rounded-md px-3 py-2.5 text-sm font-semibold text-slate-700 hover:bg-emerald-50">
+                  Create an account
+                </Link>
+              </>
+            )}
           </div>
         </nav>
       )}

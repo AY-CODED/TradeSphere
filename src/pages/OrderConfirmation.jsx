@@ -1,10 +1,13 @@
 import { Link, useLocation } from 'react-router-dom';
 import { ArrowRight, CheckCircle, Clock3, Download, MapPin, PackageCheck, ShieldCheck, Truck } from 'lucide-react';
 import { formatPrice } from '../utils/formatPrice';
+import { useAuth } from '../hooks/useAuth';
 
 const OrderConfirmation = () => {
   const location = useLocation();
   const order = location.state?.order || JSON.parse(localStorage.getItem('tradesphere-customer-last-order') || 'null');
+  const { user } = useAuth();
+  const accountName = user?.fullName || user?.name || user?.email || 'your account';
 
   if (!order) {
     return (
@@ -22,7 +25,7 @@ const OrderConfirmation = () => {
         <section className="grid items-center gap-8 rounded-2xl border border-slate-200 bg-white p-6 md:grid-cols-[1fr_280px] md:p-10">
           <div>
             <span className="inline-flex items-center gap-2 rounded-full bg-green-100 px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-green-800"><CheckCircle className="h-4 w-4" /> Transaction successful</span>
-            <h1 className="mt-4 text-3xl font-bold text-slate-900 md:text-4xl">Thank you for your order, <span className="text-green-700">John Doe!</span></h1>
+            <h1 className="mt-4 text-3xl font-bold text-slate-900 md:text-4xl">Thank you for your order, <span className="text-green-700">{accountName}!</span></h1>
             <p className="mt-3 max-w-xl text-sm leading-relaxed text-slate-600">Order <strong className="text-slate-900">#{order.id}</strong> is confirmed and being processed by your vendor network.</p>
             <div className="mt-6 flex flex-wrap gap-3">
               <a href="#logistics" className="inline-flex items-center gap-2 rounded-lg bg-green-700 px-5 py-3 text-sm font-bold text-white hover:bg-green-800">Track my order <ArrowRight className="h-4 w-4" /></a>
@@ -78,7 +81,7 @@ const OrderConfirmation = () => {
             </section>
             <section className="rounded-2xl border border-slate-200 bg-white p-5">
               <h2 className="font-bold text-slate-900">Shipping information</h2>
-              <div className="mt-4 flex gap-3"><MapPin className="h-5 w-5 shrink-0 text-green-700" /><div><p className="text-sm font-semibold text-slate-800">John Doe</p><p className="mt-1 text-xs leading-relaxed text-slate-500">12 Mushin Road, Isolo,<br />Lagos State, Nigeria</p></div></div>
+              <div className="mt-4 flex gap-3"><MapPin className="h-5 w-5 shrink-0 text-green-700" /><div><p className="text-sm font-semibold text-slate-800">{accountName}</p><p className="mt-1 text-xs leading-relaxed text-slate-500">Shipping details will appear here once available.</p></div></div>
               <Link to="/orders/review" className="mt-5 flex items-center justify-between rounded-xl bg-green-50 p-3 text-sm font-bold text-green-800 hover:bg-green-100"><span>Review packing proof</span><ArrowRight className="h-4 w-4" /></Link>
             </section>
             <Link to="/account" className="block rounded-xl border border-slate-200 bg-white p-4 text-sm font-semibold text-slate-700 hover:border-green-500">View order history and account</Link>

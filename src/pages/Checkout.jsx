@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Check, CreditCard, MapPin, ShieldCheck, Truck } from 'lucide-react';
 import { formatPrice } from '../utils/formatPrice';
 import { useCart } from '../hooks/useCart';
+import { useAuth } from '../hooks/useAuth';
 
 const deliveryOptions = [
   { id: 'standard', name: 'Standard delivery', detail: '4–7 business days · TradeSphere Verified Logistics', price: 45 },
@@ -13,6 +14,8 @@ const createOrderId = () => `TS-ORD-${new Date().getFullYear()}-${String(Date.no
 
 const Checkout = () => {
   const { items, subtotal, clearCart } = useCart();
+  const { user } = useAuth();
+  const accountName = user?.fullName || user?.name || user?.email || 'Account';
   const [delivery, setDelivery] = useState('standard');
   const [payment, setPayment] = useState('card');
   const [promo, setPromo] = useState('');
@@ -70,11 +73,11 @@ const Checkout = () => {
               <div className="mb-5 flex items-center justify-between gap-3"><div><h2 className="text-lg font-bold text-slate-900">Shipping address</h2><p className="mt-1 text-xs text-slate-500">Where should we send your order?</p></div><button type="button" className="text-sm font-bold text-green-700">+ Add new address</button></div>
               <label className="flex cursor-pointer gap-3 rounded-xl border-2 border-green-700 bg-green-50/60 p-4">
                 <input type="radio" name="address" defaultChecked className="mt-1 accent-green-700" />
-                <span><span className="block font-bold text-slate-900">John Doe <span className="ml-2 rounded-full bg-green-100 px-2 py-0.5 text-[10px] uppercase text-green-800">Home</span></span><span className="mt-1 block text-sm text-slate-600">12 Mushin Road, Isolo, Lagos, Lagos State</span><span className="mt-1 block text-xs text-slate-500">+234 801 234 5678</span></span>
+                <span><span className="block font-bold text-slate-900">{accountName} <span className="ml-2 rounded-full bg-green-100 px-2 py-0.5 text-[10px] uppercase text-green-800">Home</span></span><span className="mt-1 block text-sm text-slate-600">12 Mushin Road, Isolo, Lagos, Lagos State</span><span className="mt-1 block text-xs text-slate-500">Saved delivery address</span></span>
               </label>
               <label className="mt-3 flex cursor-pointer gap-3 rounded-xl border border-slate-200 p-4 hover:border-green-500">
                 <input type="radio" name="address" className="mt-1 accent-green-700" />
-                <span><span className="block font-bold text-slate-900">John Doe <span className="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] uppercase text-slate-600">Office</span></span><span className="mt-1 block text-sm text-slate-600">Plot 45, Victoria Island, Ahmadu Bello Way, Lagos</span><span className="mt-1 block text-xs text-slate-500">+234 809 876 5432</span></span>
+                <span><span className="block font-bold text-slate-900">{accountName} <span className="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] uppercase text-slate-600">Office</span></span><span className="mt-1 block text-sm text-slate-600">Plot 45, Victoria Island, Ahmadu Bello Way, Lagos</span><span className="mt-1 block text-xs text-slate-500">Saved delivery address</span></span>
               </label>
             </section>
 

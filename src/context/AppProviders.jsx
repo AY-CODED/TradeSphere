@@ -1,10 +1,13 @@
 import { CartProvider } from "./CartContext";
 import { ThemeProvider } from "./ThemeProvider";
+import { AuthProvider } from "./AuthProvider";
 
 const AppProviders = ({ children }) => {
   return (
     <ThemeProvider>
-      <CartProvider>{children}</CartProvider>
+      <AuthProvider>
+        <CartProvider>{children}</CartProvider>
+      </AuthProvider>
     </ThemeProvider>
   );
 };

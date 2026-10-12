@@ -5,7 +5,7 @@ import {
   ShieldCheck, Truck, Clock, CheckCircle, 
   ArrowRight, Shield, Zap, Laptop, Briefcase, Globe, Flame
 } from 'lucide-react';
-import heroImage from '../assets/images/img.jpg';
+import heroImage from '../assets/images/Hero.png';
 import ProductArt from '../components/ui/ProductArt';
 import { customerProducts } from '../data/customerProducts';
 import { useCart } from '../hooks/useCart';
