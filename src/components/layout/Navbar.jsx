@@ -10,6 +10,7 @@ import LogoutButton from '../auth/LogoutButton';
 const navigation = [
   { label: 'Marketplace', to: '/marketplace', active: (pathname) => pathname.startsWith('/marketplace') || pathname.startsWith('/products/') },
   { label: 'Logistics', to: '/account?section=My%20orders', active: (pathname) => pathname.startsWith('/orders') },
+  { label: 'Vendor workspace', to: '/vendor-workspace', active: (pathname) => pathname.startsWith('/vendor-workspace') },
 ];
 
 const Navbar = () => {
