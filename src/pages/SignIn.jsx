@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import AuthField from '../components/auth/AuthField';
 import AuthShell from '../components/auth/AuthShell';
@@ -16,6 +16,10 @@ const SignIn = () => {
   const { login } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    window.scrollTo({ top: 0 });
+  }, []);
 
   const submit = async (event) => {
     event.preventDefault();

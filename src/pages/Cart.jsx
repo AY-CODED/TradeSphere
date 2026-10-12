@@ -1,12 +1,23 @@
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Heart, ShieldCheck, Store, Trash2, Truck } from 'lucide-react';
 import ProductArt from '../components/ui/ProductArt';
 import { formatPrice } from '../utils/formatPrice';
 import { useCart } from '../hooks/useCart';
 
+const LOGISTICS_ESTIMATE = 45;
+const TAX_RATE = 0.05;
+
 const Cart = () => {
   const { items, subtotal, removeItem, updateQuantity } = useCart();
   const vendors = [...new Set(items.map((item) => item.vendor))];
+  const itemCount = items.reduce((total, item) => total + item.quantity, 0);
+  const tax = subtotal * TAX_RATE;
+  const grandTotal = subtotal + LOGISTICS_ESTIMATE + tax;
+
+  useEffect(() => {
+    window.scrollTo({ top: 0 });
+  }, []);
 
   return (
     <main className="min-h-[70vh] bg-[#f6f8fc]">
@@ -15,7 +26,7 @@ const Cart = () => {
         <div className="mb-6 flex items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold text-slate-900">Shopping cart</h1>
-            <p className="mt-1 text-sm text-slate-500">{items.reduce((total, item) => total + item.quantity, 0)} items from {vendors.length} verified {vendors.length === 1 ? 'vendor' : 'vendors'}</p>
+            <p className="mt-1 text-sm text-slate-500">{itemCount} {itemCount === 1 ? 'item' : 'items'} from {vendors.length} verified {vendors.length === 1 ? 'vendor' : 'vendors'}</p>
           </div>
           {items.length > 0 && <Link to="/marketplace" className="hidden text-sm font-semibold text-green-700 hover:underline sm:block">Browse more products</Link>}
         </div>
@@ -51,7 +62,7 @@ const Cart = () => {
                             <p className="mt-2 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-teal-700"><ShieldCheck className="h-3.5 w-3.5" /> Escrow protected</p>
                             <div className="mt-3 flex flex-wrap items-center gap-3">
                               <div className="flex items-center rounded-lg border border-slate-200">
-                                <button type="button" aria-label={`Decrease ${item.name} quantity`} onClick={() => updateQuantity(item.id, item.quantity - 1)} className="px-3 py-1.5 text-slate-600">−</button>
+                                <button type="button" aria-label={`Decrease ${item.name} quantity`} disabled={item.quantity <= 1} onClick={() => updateQuantity(item.id, Math.max(1, item.quantity - 1))} className="px-3 py-1.5 text-slate-600 disabled:cursor-not-allowed disabled:text-slate-300">−</button>
                                 <span className="min-w-8 text-center text-sm font-semibold">{item.quantity}</span>
                                 <button type="button" aria-label={`Increase ${item.name} quantity`} onClick={() => updateQuantity(item.id, item.quantity + 1)} className="px-3 py-1.5 text-slate-600">+</button>
                               </div>
@@ -74,10 +85,10 @@ const Cart = () => {
               <h2 className="text-lg font-bold text-slate-900">Order summary</h2>
               <div className="mt-5 space-y-3 text-sm">
                 <div className="flex justify-between text-slate-600"><span>Subtotal</span><span className="font-semibold text-slate-900">{formatPrice(subtotal)}</span></div>
-                <div className="flex justify-between text-slate-600"><span>Logistics estimate</span><span className="font-semibold text-slate-900">{formatPrice(45)}</span></div>
-                <div className="flex justify-between text-slate-600"><span>Estimated tax</span><span className="font-semibold text-slate-900">{formatPrice(subtotal * 0.05)}</span></div>
+                <div className="flex justify-between text-slate-600"><span>Logistics estimate</span><span className="font-semibold text-slate-900">{formatPrice(LOGISTICS_ESTIMATE)}</span></div>
+                <div className="flex justify-between text-slate-600"><span>Estimated tax</span><span className="font-semibold text-slate-900">{formatPrice(tax)}</span></div>
                 <div className="border-t border-slate-200 pt-4">
-                  <div className="flex items-baseline justify-between"><span className="font-bold text-slate-900">Grand total</span><span className="text-2xl font-extrabold text-green-700">{formatPrice(subtotal + 45 + subtotal * 0.05)}</span></div>
+                  <div className="flex items-baseline justify-between"><span className="font-bold text-slate-900">Grand total</span><span className="text-2xl font-extrabold text-green-700">{formatPrice(grandTotal)}</span></div>
                   <p className="mt-1 text-right text-[10px] text-slate-400">Includes marketplace service fee</p>
                 </div>
               </div>

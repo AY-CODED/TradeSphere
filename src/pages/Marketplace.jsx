@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Check, ChevronDown, Heart, LayoutGrid, List, ShieldCheck, SlidersHorizontal, Star } from 'lucide-react';
 import ProductArt from '../components/ui/ProductArt';
@@ -8,19 +8,30 @@ import { formatPrice } from '../utils/formatPrice';
 
 const Marketplace = () => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const categoryParam = searchParams.get('category');
   const [sort, setSort] = useState('recommended');
-  const [selectedCategories, setSelectedCategories] = useState(() => {
-    const category = searchParams.get('category');
-    return category ? [category] : [];
-  });
+  const [selectedCategories, setSelectedCategories] = useState(() => (categoryParam ? [categoryParam] : []));
   const [selectedLocations, setSelectedLocations] = useState([]);
   const [minimumRating, setMinimumRating] = useState(0);
   const [listView, setListView] = useState(false);
   const [savedProducts, setSavedProducts] = useState([]);
   const [notice, setNotice] = useState('');
+  const noticeTimer = useRef(null);
   const { addItem } = useCart();
   const query = searchParams.get('q') || '';
   const categories = [...new Set(customerProducts.map((product) => product.category))];
+
+  useEffect(() => {
+    window.scrollTo({ top: 0 });
+  }, []);
+
+  // Keep the category filter in sync when the URL changes while this page is already open
+  useEffect(() => {
+    setSelectedCategories(categoryParam ? [categoryParam] : []);
+  }, [categoryParam]);
+
+  // Clear any pending notice timer on unmount
+  useEffect(() => () => clearTimeout(noticeTimer.current), []);
 
   const visibleProducts = useMemo(() => {
     const normalizedQuery = query.toLowerCase();
@@ -56,7 +67,15 @@ const Marketplace = () => {
   const addProduct = (product) => {
     addItem(product);
     setNotice(`${product.name} added to your cart.`);
-    window.setTimeout(() => setNotice(''), 2500);
+    clearTimeout(noticeTimer.current);
+    noticeTimer.current = setTimeout(() => setNotice(''), 2500);
+  };
+
+  const clearFilters = () => {
+    setSelectedCategories([]);
+    setSelectedLocations([]);
+    setMinimumRating(0);
+    setSearchParams({});
   };
 
   return (
@@ -99,7 +118,7 @@ const Marketplace = () => {
             <div className="mb-5 border-b border-slate-100 pb-5">
               <div className="mb-3 flex items-center justify-between">
                 <h2 className="text-xs font-bold uppercase tracking-wide text-slate-700">Categories</h2>
-                <button type="button" onClick={() => { setSelectedCategories([]); setSelectedLocations([]); setMinimumRating(0); setSearchParams({}); }} className="text-xs font-semibold text-green-700">Clear all</button>
+                <button type="button" onClick={clearFilters} className="text-xs font-semibold text-green-700">Clear all</button>
               </div>
               <div className="space-y-3">
                 {categories.map((category) => (
@@ -140,7 +159,7 @@ const Marketplace = () => {
               <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center">
                 <h2 className="text-xl font-bold text-slate-900">No products found</h2>
                 <p className="mt-2 text-sm text-slate-500">Try another search or clear your selected filters.</p>
-                <button type="button" onClick={() => { setSearchParams({}); setSelectedCategories([]); setSelectedLocations([]); setMinimumRating(0); }} className="mt-5 rounded-lg bg-green-700 px-5 py-2.5 text-sm font-semibold text-white">Clear filters</button>
+                <button type="button" onClick={clearFilters} className="mt-5 rounded-lg bg-green-700 px-5 py-2.5 text-sm font-semibold text-white">Clear filters</button>
               </div>
             ) : (
               <div className={`grid gap-5 ${listView ? 'grid-cols-1' : 'sm:grid-cols-2 xl:grid-cols-3'}`}>

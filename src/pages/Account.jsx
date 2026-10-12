@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { ArrowRight, Bell, CheckCircle, ChevronRight, CreditCard, MapPin, Package, ShieldCheck, Wallet } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { formatPrice } from '../utils/formatPrice';
@@ -14,22 +14,42 @@ const menuItems = [
   { label: 'Support center', icon: Bell },
 ];
 
+const getStoredOrder = () => {
+  try {
+    return JSON.parse(localStorage.getItem('tradesphere-customer-last-order') || 'null');
+  } catch {
+    return null;
+  }
+};
+
 const Account = () => {
   const [searchParams] = useSearchParams();
-  const [activeSection, setActiveSection] = useState(() => searchParams.get('section') || 'Account info');
+  const [activeSection, setActiveSection] = useState(() => {
+    const section = searchParams.get('section');
+    return menuItems.some((item) => item.label === section) ? section : 'Account info';
+  });
   const [editing, setEditing] = useState(false);
   const [saved, setSaved] = useState(false);
+  const savedTimer = useRef(null);
   const { user } = useAuth();
   const accountName = user?.fullName || user?.name || user?.email || 'Account';
   const accountEmail = user?.email || '—';
   const accountInitials = accountName.split(/\s+/).slice(0, 2).map((part) => part[0]).join('').toUpperCase();
-  const order = JSON.parse(localStorage.getItem('tradesphere-customer-last-order') || 'null');
+  const order = useMemo(getStoredOrder, []);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0 });
+  }, []);
+
+  // Clear any pending "saved" timer on unmount
+  useEffect(() => () => clearTimeout(savedTimer.current), []);
 
   const saveProfile = (event) => {
     event.preventDefault();
     setEditing(false);
     setSaved(true);
-    window.setTimeout(() => setSaved(false), 2500);
+    clearTimeout(savedTimer.current);
+    savedTimer.current = setTimeout(() => setSaved(false), 2500);
   };
 
   return (

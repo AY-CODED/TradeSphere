@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowRight, CheckCircle, Heart, Share2, ShieldCheck, ShoppingCart, Star, Truck } from 'lucide-react';
 import ProductArt from '../components/ui/ProductArt';
@@ -14,6 +14,14 @@ const ProductDetails = () => {
   const [saved, setSaved] = useState(false);
   const { addItem } = useCart();
   const navigate = useNavigate();
+
+  // Scroll to top and reset page state whenever the product changes
+  useEffect(() => {
+    window.scrollTo({ top: 0 });
+    setQuantity(1);
+    setAdded(false);
+    setSaved(false);
+  }, [productId]);
 
   const addProduct = () => {
     addItem(product, quantity);

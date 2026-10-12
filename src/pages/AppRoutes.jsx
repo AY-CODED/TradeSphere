@@ -1,4 +1,5 @@
-import { Navigate, Route, Routes } from "react-router-dom";
+import { useEffect } from "react";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import PageLayout from "../components/layout/PageLayout";
 import RedirectAuthenticated from "../components/auth/RedirectAuthenticated";
 import RequireAuth from "../components/auth/RequireAuth";
@@ -17,6 +18,12 @@ import { useAuth } from "../hooks/useAuth";
 
 const AppRoutes = () => {
   const { status, sessionError, refresh, continueAsGuest } = useAuth();
+  const { pathname } = useLocation();
+
+  // Scroll to the top on every page change (not on query-string changes like marketplace filters)
+  useEffect(() => {
+    window.scrollTo({ top: 0 });
+  }, [pathname]);
 
   if (status === "loading") {
     return (

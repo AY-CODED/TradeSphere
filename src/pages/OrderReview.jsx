@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Camera, CheckCircle, Clock3, Eye, Flag, MessageCircle, Package, ShieldCheck, Truck } from 'lucide-react';
 import { customerProducts } from '../data/customerProducts';
@@ -19,6 +19,10 @@ const OrderReview = () => {
   const product = customerProducts[0];
   const allChecked = checked.length === checklistItems.length;
 
+  useEffect(() => {
+    window.scrollTo({ top: 0 });
+  }, []);
+
   const toggleCheck = (item) => setChecked((current) => current.includes(item)
     ? current.filter((entry) => entry !== item)
     : [...current, item]);
@@ -28,6 +32,7 @@ const OrderReview = () => {
     if (!issue.trim()) return;
     setStatus('Your packing concern was submitted. Your payment remains protected while our team reviews it.');
     setReporting(false);
+    setIssue('');
   };
 
   return (

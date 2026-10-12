@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import AuthField from '../components/auth/AuthField';
 import AuthShell from '../components/auth/AuthShell';
@@ -15,6 +15,10 @@ const SignUp = () => {
   const [submitting, setSubmitting] = useState(false);
   const { signup } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    window.scrollTo({ top: 0 });
+  }, []);
 
   const updateValue = (field) => (event) => {
     setValues((current) => ({ ...current, [field]: event.target.value }));

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Check, CreditCard, MapPin, ShieldCheck, Truck } from 'lucide-react';
 import { formatPrice } from '../utils/formatPrice';
@@ -19,11 +19,15 @@ const Checkout = () => {
   const [delivery, setDelivery] = useState('standard');
   const [payment, setPayment] = useState('card');
   const [promo, setPromo] = useState('');
-  const [promoMessage, setPromoMessage] = useState('');
+  const [promoStatus, setPromoStatus] = useState(null); // null | { valid: boolean, text: string }
   const navigate = useNavigate();
   const deliveryPrice = deliveryOptions.find((option) => option.id === delivery)?.price || 45;
   const tax = subtotal * 0.05;
   const total = subtotal + deliveryPrice + tax;
+
+  useEffect(() => {
+    window.scrollTo({ top: 0 });
+  }, []);
 
   if (items.length === 0) {
     return (
@@ -36,7 +40,11 @@ const Checkout = () => {
   }
 
   const applyPromo = () => {
-    setPromoMessage(promo.trim().toUpperCase() === 'TRADE10' ? 'TRADE10 applied. Discount will be confirmed on your invoice.' : 'That promo code is not valid.');
+    const valid = promo.trim().toUpperCase() === 'TRADE10';
+    setPromoStatus({
+      valid,
+      text: valid ? 'TRADE10 applied. Discount will be confirmed on your invoice.' : 'That promo code is not valid.',
+    });
   };
 
   const placeOrder = (event) => {
@@ -52,9 +60,14 @@ const Checkout = () => {
       payment,
       status: 'Payment confirmed',
     };
-    localStorage.setItem('tradesphere-customer-last-order', JSON.stringify(order));
-    clearCart();
+    try {
+      localStorage.setItem('tradesphere-customer-last-order', JSON.stringify(order));
+    } catch {
+      // Storage unavailable (private mode or full); the order still passes via router state.
+    }
+    // Navigate first so the "cart is empty" screen never flashes after the cart is cleared
     navigate('/orders/confirmation', { state: { order } });
+    clearCart();
   };
 
   return (
@@ -108,10 +121,10 @@ const Checkout = () => {
               <div className="flex justify-between border-t border-slate-200 pt-4 font-bold text-slate-900"><span>Order total</span><span className="text-xl text-green-700">{formatPrice(total)}</span></div>
             </div>
             <div className="mt-4 flex gap-2">
-              <input value={promo} onChange={(event) => setPromo(event.target.value)} placeholder="Promo code" className="min-w-0 flex-1 rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-green-600" />
+              <input value={promo} onChange={(event) => setPromo(event.target.value)} aria-label="Promo code" placeholder="Promo code" className="min-w-0 flex-1 rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-green-600" />
               <button type="button" onClick={applyPromo} className="rounded-lg bg-green-100 px-4 text-sm font-bold text-green-800 hover:bg-green-200">Apply</button>
             </div>
-            {promoMessage && <p role="status" className={`mt-2 text-xs ${promoMessage.startsWith('TRADE10') ? 'text-green-700' : 'text-red-600'}`}>{promoMessage}</p>}
+            {promoStatus && <p role="status" className={`mt-2 text-xs ${promoStatus.valid ? 'text-green-700' : 'text-red-600'}`}>{promoStatus.text}</p>}
             <button type="submit" className="mt-4 w-full rounded-xl bg-green-700 px-4 py-3.5 font-bold text-white transition hover:bg-green-800">Place secure order</button>
             <div className="mt-4 rounded-xl border border-green-200 bg-green-50 p-4"><p className="flex items-center gap-2 text-sm font-bold text-green-900"><ShieldCheck className="h-4 w-4" /> 100% safe payment</p><p className="mt-1 text-xs leading-relaxed text-slate-600">Escrow protection keeps your funds secure until delivery is confirmed.</p></div>
             <p className="mt-4 text-center text-[10px] font-bold uppercase tracking-widest text-slate-400">Secure SSL checkout</p>

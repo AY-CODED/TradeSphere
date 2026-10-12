@@ -1,13 +1,26 @@
+import { useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { ArrowRight, CheckCircle, Clock3, Download, MapPin, PackageCheck, ShieldCheck, Truck } from 'lucide-react';
 import { formatPrice } from '../utils/formatPrice';
 import { useAuth } from '../hooks/useAuth';
 
+const getStoredOrder = () => {
+  try {
+    return JSON.parse(localStorage.getItem('tradesphere-customer-last-order') || 'null');
+  } catch {
+    return null;
+  }
+};
+
 const OrderConfirmation = () => {
   const location = useLocation();
-  const order = location.state?.order || JSON.parse(localStorage.getItem('tradesphere-customer-last-order') || 'null');
   const { user } = useAuth();
+  const order = location.state?.order || getStoredOrder();
   const accountName = user?.fullName || user?.name || user?.email || 'your account';
+
+  useEffect(() => {
+    window.scrollTo({ top: 0 });
+  }, []);
 
   if (!order) {
     return (
