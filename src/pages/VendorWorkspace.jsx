@@ -1,384 +1,419 @@
-import { ArrowDownRight, ArrowUpRight, Bell, ChevronDown, ChevronRight, Download, Grid2x2, LayoutGrid, Package, Search, ShieldCheck, ShoppingBag, TrendingUp, Truck, UserRound, Wallet, Warehouse } from 'lucide-react';
+import { useState } from 'react';
+import {
+  ArrowDownToLine,
+  ArrowRight,
+  BarChart3,
+  Bell,
+  Boxes,
+  Building2,
+  Check,
+  ChevronRight,
+  CircleHelp,
+  ClipboardList,
+  LayoutDashboard,
+  Package,
+  Plus,
+  Settings2,
+  ShoppingBag,
+  Sparkles,
+  UsersRound,
+  Wallet,
+  X,
+} from 'lucide-react';
+import { Link } from 'react-router-dom';
+import Logo from '../assets/images/Logo.png';
+import LogoutButton from '../components/auth/LogoutButton';
+import { useAuth } from '../hooks/useAuth';
 
-const navItems = [
-  { label: 'Overview', icon: LayoutGrid, active: true },
-  { label: 'Orders', icon: ShoppingBag },
-  { label: 'Products', icon: Package },
-  { label: 'Analytics', icon: TrendingUp },
-  { label: 'Customers', icon: UserRound },
-  { label: 'Inventory', icon: Warehouse },
-  { label: 'Reports', icon: Download },
+const navigation = [
+  { label: 'Overview', icon: LayoutDashboard, description: 'Your business at a glance' },
+  { label: 'Orders', icon: ShoppingBag, description: 'Manage incoming orders' },
+  { label: 'Products', icon: Package, description: 'Manage your product catalogue' },
+  { label: 'Inventory', icon: Boxes, description: 'Keep stock up to date' },
+  { label: 'Analytics', icon: BarChart3, description: 'Understand your performance' },
+  { label: 'Customers', icon: UsersRound, description: 'Build buyer relationships' },
+  { label: 'Payouts', icon: Wallet, description: 'Review your payment activity' },
+  { label: 'Settings', icon: Settings2, description: 'Manage business preferences' },
 ];
 
-const metrics = [
-  { label: 'Total revenue', value: '$54,230.00', delta: '2.5%', trend: 'up', note: 'vs last month', accent: 'text-slate-900' },
-  { label: 'Active orders', value: '142', delta: '8.2%', trend: 'up', note: 'vs last month', accent: 'text-slate-900' },
-  { label: 'Avg completion', value: '4.2 days', delta: '0.5 days', trend: 'down', note: 'vs last month', accent: 'text-slate-900' },
-  { label: 'Customer satisfaction', value: '98.2%', delta: '0.4%', trend: 'up', note: 'vs last month', accent: 'text-slate-900' },
+const dashboardMetrics = [
+  { label: 'Gross sales', icon: Wallet },
+  { label: 'Orders to fulfil', icon: ShoppingBag },
+  { label: 'Active products', icon: Package },
+  { label: 'Store visits', icon: UsersRound },
 ];
 
-const orderRows = [
-  { id: 'ORD-8921', customer: 'Kwame Mensah', product: 'Premium Solar Kit', date: '2023-10-24', amount: '$450.00', status: 'Processing' },
-  { id: 'ORD-8922', customer: 'Amara Okafor', product: 'Agricultural Pump', date: '2023-10-23', amount: '$1,200.00', status: 'Shipped' },
-  { id: 'ORD-8923', customer: 'Zainab Bello', product: 'Battery Storage Unit', date: '2023-10-23', amount: '$890.00', status: 'Delivered' },
-  { id: 'ORD-8924', customer: 'Kofi Asante', product: 'Grain Mill Model X', date: '2023-10-22', amount: '$2,150.00', status: 'Pending' },
-  { id: 'ORD-8925', customer: 'Fatima Diop', product: 'Irrigation Sensors', date: '2023-10-22', amount: '$320.00', status: 'Delivered' },
-];
+const sectionEmptyStates = {
+  Orders: {
+    icon: ShoppingBag,
+    title: 'Your orders will show up here',
+    description: 'When buyers place orders with your business, you can review details and manage fulfilment here.',
+  },
+  Products: {
+    icon: Package,
+    title: 'Start building your catalogue',
+    description: 'Add your first product to prepare your TradeSphere storefront for buyers.',
+  },
+  Inventory: {
+    icon: Boxes,
+    title: 'No inventory to track yet',
+    description: 'Your stock levels will appear here after products are connected to your vendor catalogue.',
+  },
+  Analytics: {
+    icon: BarChart3,
+    title: 'Your performance insights are on the way',
+    description: 'Once your business data is connected, this space will show your sales and marketplace trends.',
+  },
+  Customers: {
+    icon: UsersRound,
+    title: 'Your customer list is ready to grow',
+    description: 'Buyers who place orders with your business will appear here.',
+  },
+  Payouts: {
+    icon: Wallet,
+    title: 'Payout activity will appear here',
+    description: 'Review your available balance and payout history once payment services are connected.',
+  },
+  Settings: {
+    icon: Settings2,
+    title: 'Business settings',
+    description: 'Your vendor profile and workspace preferences will be available here.',
+  },
+};
 
-const stockLegend = [
-  { label: 'Electronics', value: '45%', color: 'bg-emerald-500' },
-  { label: 'Agriculture', value: '30%', color: 'bg-orange-400' },
-  { label: 'Logistics', value: '15%', color: 'bg-sky-400' },
-  { label: 'Tools', value: '10%', color: 'bg-violet-400' },
-];
+const VendorWorkspace = () => {
+  const [activeSection, setActiveSection] = useState('Overview');
+  const [productFormOpen, setProductFormOpen] = useState(false);
+  const [productNotice, setProductNotice] = useState('');
+  const { user } = useAuth();
+  const vendorName = user?.businessName || user?.fullName || user?.name || user?.email || 'Your business';
+  const initials = vendorName.split(/[\s@.]+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase();
 
-const logisticsEntries = [
-  { title: 'Customs Cleared', subtitle: 'Shipment LR-9021', time: '2 hours ago', status: 'done' },
-  { title: 'Delayed Pickup', subtitle: 'Courier after 45 mins', time: '15 mins ago', status: 'warning' },
-];
+  const openProductForm = () => {
+    setProductNotice('');
+    setProductFormOpen(true);
+  };
 
-const chartBars = [32, 42, 48, 34, 60, 52, 65, 58, 62, 72, 75, 68];
+  const submitProductForm = (event) => {
+    event.preventDefault();
+    setProductNotice('Your vendor product service is not connected yet. Nothing was saved.');
+  };
 
-const VendorWorkspace = () => (
-  <div className="min-h-screen bg-[#edf1f4] px-4 py-6 md:px-6 lg:px-8">
-    <div className="mx-auto max-w-[1280px] overflow-hidden rounded-[20px] border border-slate-200 bg-[#f5f7fa] shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
-      <div className="flex min-h-[980px] flex-col lg:flex-row">
-        <aside className="w-full bg-[#0f2335] px-5 py-5 text-slate-200 lg:w-[220px] lg:shrink-0">
-          <div className="flex items-center gap-3 border-b border-slate-700 pb-5">
-            <div className="grid h-9 w-9 place-items-center rounded-md bg-[#183852] text-sm font-black text-white">T</div>
-            <div className="text-left">
-              <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-400">Vendor workspace</p>
-            </div>
+  const selectSection = (section) => {
+    setActiveSection(section);
+    setProductNotice('');
+  };
+
+  const activeDescription = navigation.find((item) => item.label === activeSection)?.description;
+  const emptyState = sectionEmptyStates[activeSection];
+  const EmptyIcon = emptyState?.icon;
+
+  return (
+    <div className="min-h-screen bg-[#f5f7f6] text-slate-900 lg:flex">
+      <aside className="flex w-full shrink-0 flex-col border-b border-slate-200 bg-white lg:sticky lg:top-0 lg:h-screen lg:w-[258px] lg:border-b-0 lg:border-r">
+        <div className="flex items-center justify-between gap-3 px-5 py-4 lg:px-6 lg:py-6">
+          <Link to="/" aria-label="TradeSphere home" className="inline-flex items-center">
+            <img src={Logo} alt="TradeSphere" className="h-9 w-auto object-contain" />
+          </Link>
+          <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-emerald-800 lg:hidden">
+            Vendor
+          </span>
+        </div>
+
+        <div className="hidden px-6 pb-4 lg:block">
+          <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">Workspace</p>
+            <p className="mt-1 text-sm font-semibold text-slate-800">Vendor portal</p>
           </div>
+        </div>
 
-          <nav aria-label="Vendor workspace navigation" className="mt-6 space-y-1.5">
-            {navItems.map(({ label, icon: Icon, active }) => (
+        <nav aria-label="Vendor workspace sections" className="flex gap-1 overflow-x-auto px-3 pb-3 lg:flex-1 lg:flex-col lg:gap-1.5 lg:overflow-y-auto lg:px-4 lg:pb-4">
+          <p className="hidden px-3 pb-2 pt-4 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400 lg:block">Workspace</p>
+          {navigation.map(({ label, icon: Icon }) => {
+            const active = activeSection === label;
+            return (
               <button
                 key={label}
                 type="button"
-                className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition ${active ? 'bg-emerald-600 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05)]' : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'}`}
+                aria-current={active ? 'page' : undefined}
+                onClick={() => selectSection(label)}
+                className={`inline-flex shrink-0 items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 lg:w-full ${
+                  active
+                    ? 'bg-emerald-800 text-white shadow-sm'
+                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                }`}
               >
-                <Icon className="h-4 w-4" />
-                <span>{label}</span>
+                <Icon aria-hidden="true" className="h-4 w-4 shrink-0" />
+                {label}
               </button>
-            ))}
-          </nav>
+            );
+          })}
+        </nav>
 
-          <div className="mt-8 space-y-1.5 border-t border-slate-700 pt-5 text-sm">
-            <button type="button" className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-slate-300 transition hover:bg-slate-800/70 hover:text-white">
-              <ShieldCheck className="h-4 w-4" />
-              Settings
-            </button>
-            <button type="button" className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-slate-300 transition hover:bg-slate-800/70 hover:text-white">
-              <Wallet className="h-4 w-4" />
-              Support
-            </button>
-            <button type="button" className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-slate-300 transition hover:bg-slate-800/70 hover:text-white">
-              <ArrowDownRight className="h-4 w-4" />
-              Log out
-            </button>
+        <div className="hidden border-t border-slate-200 p-4 lg:block">
+          <a
+            href="mailto:support@tradesphere.africa"
+            className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
+          >
+            <CircleHelp aria-hidden="true" className="h-4 w-4" />
+            Vendor support
+            <ArrowRight aria-hidden="true" className="ml-auto h-3.5 w-3.5" />
+          </a>
+          <LogoutButton className="mt-1 w-full rounded-lg px-3 py-2.5 text-left text-sm font-medium text-slate-600 transition hover:bg-rose-50 hover:text-rose-700 disabled:opacity-60" />
+        </div>
+      </aside>
+
+      <div className="min-w-0 flex-1">
+        <header className="sticky top-0 z-20 flex h-[68px] items-center justify-between border-b border-slate-200 bg-white/95 px-4 backdrop-blur sm:px-6 lg:px-9">
+          <div className="hidden items-center gap-2 text-xs text-slate-500 sm:flex">
+            <span>Vendor workspace</span>
+            <ChevronRight aria-hidden="true" className="h-3.5 w-3.5" />
+            <span className="font-semibold text-slate-800">{activeSection}</span>
           </div>
-        </aside>
-
-        <div className="flex-1 bg-[#f4f7f9]">
-          <header className="flex flex-col gap-4 border-b border-slate-200 bg-[#f8fafb] px-4 py-4 md:flex-row md:items-center md:justify-between md:px-6">
-            <div className="relative w-full max-w-[420px]">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
-              <input
-                aria-label="Search products, vendors, or services"
-                value=""
-                readOnly
-                placeholder="Search products, vendors, or services..."
-                className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-3 text-sm text-slate-700 outline-none placeholder:text-slate-500"
-              />
-            </div>
-
-            <div className="flex items-center justify-end gap-3">
-              <button type="button" className="rounded-lg border border-slate-200 bg-white p-2 text-slate-600 shadow-sm transition hover:border-slate-300 hover:text-slate-900">
-                <Bell className="h-4 w-4" />
-              </button>
-              <div className="flex items-center gap-3 rounded-full border border-slate-200 bg-white px-2 py-1.5 shadow-sm">
-                <div className="grid h-8 w-8 place-items-center rounded-full bg-gradient-to-br from-emerald-400 to-emerald-700 text-xs font-bold text-white">JD</div>
-                <div className="hidden text-left sm:block">
-                  <p className="text-[11px] font-semibold text-slate-900">John Doe</p>
-                  <p className="text-[10px] text-slate-500">Supplier</p>
-                </div>
+          <span className="text-xs font-semibold text-slate-600 sm:hidden">{activeSection}</span>
+          <div className="ml-auto flex items-center gap-2.5 sm:gap-4">
+            <span className="hidden items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 md:inline-flex">
+              <span className="h-2 w-2 rounded-full bg-slate-400" />
+              Vendor data not connected
+            </span>
+            <button
+              type="button"
+              aria-label="Notifications"
+              title="Notifications"
+              className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 text-slate-600 transition hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700"
+            >
+              <Bell aria-hidden="true" className="h-4 w-4" />
+            </button>
+            <div className="flex min-w-0 items-center gap-2.5 border-l border-slate-200 pl-3 sm:pl-4">
+              <div aria-hidden="true" className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-emerald-100 text-xs font-bold text-emerald-900">
+                {initials || 'V'}
+              </div>
+              <div className="hidden min-w-0 sm:block">
+                <p className="max-w-40 truncate text-xs font-semibold text-slate-900">{vendorName}</p>
+                <p className="text-[10px] text-slate-500">Vendor account</p>
               </div>
             </div>
-          </header>
+          </div>
+        </header>
 
-          <main className="px-4 pb-7 pt-6 md:px-6">
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <div>
-                <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">Overview</p>
-                <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-900">Overview</h1>
-                <p className="mt-1 text-sm text-slate-500">Monitor your performance and manage high-priority orders.</p>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-3">
-                <button type="button" className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50">
-                  <Download className="h-4 w-4" />
-                  Export Data
+        <main className="mx-auto w-full max-w-[1440px] px-4 py-7 sm:px-6 sm:py-9 lg:px-9">
+          <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
+            <div>
+              <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-emerald-800">
+                <Building2 aria-hidden="true" className="h-4 w-4" />
+                {activeSection === 'Overview' ? 'Business overview' : 'Vendor workspace'}
+              </p>
+              <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-950 sm:text-[34px]">{activeSection}</h1>
+              <p className="mt-2 text-sm text-slate-600">{activeDescription}</p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2.5">
+              {activeSection === 'Overview' && (
+                <button
+                  type="button"
+                  disabled
+                  title="Available when vendor data is connected"
+                  className="inline-flex h-10 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 text-sm font-semibold text-slate-400 disabled:cursor-not-allowed"
+                >
+                  <ArrowDownToLine aria-hidden="true" className="h-4 w-4" />
+                  Export
                 </button>
-                <button type="button" className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700">
-                  <Grid2x2 className="h-4 w-4" />
-                  Add New Product
+              )}
+              {(activeSection === 'Overview' || activeSection === 'Products') && (
+                <button
+                  type="button"
+                  onClick={openProductForm}
+                  className="inline-flex h-10 items-center gap-2 rounded-lg bg-emerald-800 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700"
+                >
+                  <Plus aria-hidden="true" className="h-4 w-4" />
+                  Add product
                 </button>
-              </div>
+              )}
             </div>
+          </div>
 
-            <section className="mt-6 grid gap-4 xl:grid-cols-4">
-              {metrics.map(({ label, value, delta, trend, note }) => (
-                <article key={label} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">{label}</p>
-                    <span className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${trend === 'up' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
-                      {trend === 'up' ? <ArrowUpRight className="h-3.5 w-3.5" /> : <ArrowDownRight className="h-3.5 w-3.5" />}
-                      {delta}
-                    </span>
-                  </div>
-                  <div className="mt-4 flex items-end justify-between gap-3">
-                    <div>
-                      <p className="text-2xl font-bold tracking-tight text-slate-900">{value}</p>
-                      <p className="mt-1 text-[11px] text-slate-500">{note}</p>
+          {activeSection === 'Overview' ? (
+            <>
+              <section aria-label="Business metrics" className="mt-7 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                {dashboardMetrics.map(({ label, icon: Icon }) => (
+                  <article key={label} className="rounded-xl border border-slate-200 bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-sm font-medium text-slate-600">{label}</p>
+                      <span className="grid h-9 w-9 place-items-center rounded-lg bg-emerald-50 text-emerald-800">
+                        <Icon aria-hidden="true" className="h-4 w-4" />
+                      </span>
                     </div>
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-700">
-                      {trend === 'up' ? <TrendingUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                    <p className="mt-4 text-3xl font-semibold tracking-tight text-slate-400" aria-label={`${label} unavailable`}>—</p>
+                    <p className="mt-1 text-xs text-slate-500">Available when your vendor data is connected</p>
+                  </article>
+                ))}
+              </section>
+
+              <section className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.65fr)_minmax(290px,0.9fr)]">
+                <article className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <h2 className="text-base font-bold text-slate-900">Sales performance</h2>
+                      <p className="mt-1 text-sm text-slate-500">Your revenue trends will appear here.</p>
+                    </div>
+                    <span className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-500">No data yet</span>
+                  </div>
+                  <div className="mt-5 grid min-h-56 place-items-center rounded-lg border border-dashed border-slate-200 bg-slate-50/70 px-5 py-8 text-center">
+                    <div>
+                      <span className="mx-auto grid h-11 w-11 place-items-center rounded-xl bg-white text-slate-400 shadow-sm">
+                        <BarChart3 aria-hidden="true" className="h-5 w-5" />
+                      </span>
+                      <p className="mt-3 text-sm font-semibold text-slate-700">Your sales chart will appear here</p>
+                      <p className="mt-1 max-w-sm text-xs leading-5 text-slate-500">Connect your vendor services to see verified sales activity and performance over time.</p>
                     </div>
                   </div>
                 </article>
-              ))}
-            </section>
 
-            <section className="mt-6 grid gap-6 xl:grid-cols-[1.7fr_0.9fr]">
-              <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h2 className="text-xl font-bold text-slate-900">Revenue Trends</h2>
-                    <p className="mt-1 text-sm text-slate-500">Monthly sales performance vs target.</p>
-                  </div>
-                  <button type="button" className="rounded-full border border-slate-200 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">
-                    H1 2023
-                  </button>
-                </div>
-
-                <div className="mt-4 rounded-xl bg-[#eef7f4] p-3">
-                  <svg viewBox="0 0 620 220" className="h-52 w-full" preserveAspectRatio="none" aria-label="Revenue chart">
-                    <defs>
-                      <linearGradient id="chartFill" x1="0" x2="0" y1="0" y2="1">
-                        <stop offset="0%" stopColor="#4ade80" stopOpacity="0.35" />
-                        <stop offset="100%" stopColor="#4ade80" stopOpacity="0.04" />
-                      </linearGradient>
-                    </defs>
-                    {[0, 1, 2, 3, 4].map((line) => (
-                      <line key={line} x1="0" y1={30 + line * 42} x2="620" y2={30 + line * 42} stroke="#dfe7ec" strokeDasharray="4 8" />
-                    ))}
-                    <path d="M0 146 C50 110, 70 122, 120 98 S200 76, 240 92 S310 110, 380 70 S470 48, 520 88 S590 124, 620 72 L620 210 L0 210 Z" fill="url(#chartFill)" />
-                    <path d="M0 146 C50 110, 70 122, 120 98 S200 76, 240 92 S310 110, 380 70 S470 48, 520 88 S590 124, 620 72" fill="none" stroke="#16a34a" strokeWidth="3" strokeLinecap="round" />
-                    {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'].map((label, index) => (
-                      <text key={label} x={90 + index * 90} y="205" fill="#6b7280" fontSize="11" textAnchor="middle">{label}</text>
-                    ))}
-                  </svg>
-                </div>
-              </article>
-
-              <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">Featured showcase</p>
-                    <h2 className="mt-2 text-lg font-bold text-slate-900">Industrial Grade Generator X200</h2>
-                  </div>
-                  <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold text-emerald-700">Trending</span>
-                </div>
-
-                <div className="mt-4 overflow-hidden rounded-[18px] bg-[#e9ecef] p-5">
-                  <div className="relative mx-auto h-40 w-full max-w-[240px] rounded-[18px] bg-gradient-to-b from-slate-200 to-slate-400">
-                    <div className="absolute left-1/2 top-1/2 h-20 w-20 -translate-x-1/2 -translate-y-1/2 rounded-[50%] border-[10px] border-slate-100 bg-slate-200/90" />
-                    <div className="absolute left-1/2 top-1/2 h-16 w-28 -translate-x-1/2 -translate-y-1/2 rounded-[40px] border border-slate-300 bg-slate-100" />
-                    <div className="absolute left-[50%] top-[18%] h-7 w-7 -translate-x-1/2 rounded-full bg-slate-200" />
-                    <div className="absolute left-[28%] top-[54%] h-14 w-14 rounded-full border-[8px] border-slate-300 bg-slate-100" />
-                    <div className="absolute right-[28%] top-[54%] h-14 w-14 rounded-full border-[8px] border-slate-300 bg-slate-100" />
-                    <div className="absolute left-1/2 top-[62%] h-12 w-16 -translate-x-1/2 rounded-[16px] border border-slate-300 bg-slate-100" />
-                  </div>
-                </div>
-
-                <div className="mt-4">
-                  <p className="text-sm leading-6 text-slate-600">High-efficiency diesel generator designed for rugged industrial and commercial trade applications.</p>
-                </div>
-
-                <div className="mt-5 flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500">Unit price</p>
-                    <p className="mt-1 text-2xl font-bold text-slate-900">$1,249.00</p>
-                  </div>
-                  <button type="button" className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700">
-                    Manage Listing
-                  </button>
-                </div>
-              </article>
-            </section>
-
-            <section className="mt-6 grid gap-6 xl:grid-cols-[1.7fr_1fr]">
-              <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                  <div>
-                    <h2 className="text-xl font-bold text-slate-900">Recent Orders</h2>
-                    <p className="mt-1 text-sm text-slate-500">Manage and track your latest customer orders.</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="relative hidden sm:block">
-                      <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-500" />
-                      <input aria-label="Search order IDs" placeholder="Search ID or customer..." className="h-9 w-44 rounded-lg border border-slate-200 bg-slate-50 pl-9 text-xs text-slate-700 outline-none placeholder:text-slate-400" />
+                <article className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <h2 className="text-base font-bold text-slate-900">Get your store ready</h2>
+                      <p className="mt-1 text-sm text-slate-500">A few steps to get started.</p>
                     </div>
-                    <button type="button" className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700">
-                      Filter
-                      <ChevronDown className="h-3.5 w-3.5" />
+                    <span className="grid h-9 w-9 place-items-center rounded-lg bg-amber-50 text-amber-700">
+                      <Sparkles aria-hidden="true" className="h-4 w-4" />
+                    </span>
+                  </div>
+                  <div className="mt-5 space-y-3">
+                    <button type="button" onClick={() => selectSection('Settings')} className="flex w-full items-center gap-3 rounded-lg border border-slate-200 p-3 text-left transition hover:border-emerald-300 hover:bg-emerald-50/40">
+                      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-slate-100 text-slate-600"><Building2 aria-hidden="true" className="h-4 w-4" /></span>
+                      <span className="min-w-0 flex-1"><span className="block text-sm font-semibold text-slate-800">Complete business profile</span><span className="mt-0.5 block text-xs text-slate-500">Add your company details</span></span>
+                      <ChevronRight aria-hidden="true" className="h-4 w-4 text-slate-400" />
                     </button>
+                    <button type="button" onClick={openProductForm} className="flex w-full items-center gap-3 rounded-lg border border-slate-200 p-3 text-left transition hover:border-emerald-300 hover:bg-emerald-50/40">
+                      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-slate-100 text-slate-600"><Package aria-hidden="true" className="h-4 w-4" /></span>
+                      <span className="min-w-0 flex-1"><span className="block text-sm font-semibold text-slate-800">Add your first product</span><span className="mt-0.5 block text-xs text-slate-500">Set up your catalogue</span></span>
+                      <ChevronRight aria-hidden="true" className="h-4 w-4 text-slate-400" />
+                    </button>
+                    <div className="flex items-center gap-3 rounded-lg bg-slate-50 p-3">
+                      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-white text-slate-400"><Check aria-hidden="true" className="h-4 w-4" /></span>
+                      <span className="text-sm font-medium text-slate-500">Connect vendor services</span>
+                      <span className="ml-auto rounded-full bg-white px-2 py-1 text-[10px] font-semibold text-slate-500">Coming soon</span>
+                    </div>
                   </div>
-                </div>
+                  <a href="mailto:support@tradesphere.africa" className="mt-5 inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-800 hover:underline">
+                    Need help getting started?
+                    <ArrowRight aria-hidden="true" className="h-3.5 w-3.5" />
+                  </a>
+                </article>
+              </section>
 
-                <div className="mt-4 overflow-hidden rounded-xl border border-slate-200">
-                  <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
-                    <thead className="bg-slate-50 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
-                      <tr>
-                        <th className="px-4 py-3">Order ID</th>
-                        <th className="px-4 py-3">Customer</th>
-                        <th className="px-4 py-3">Product</th>
-                        <th className="px-4 py-3">Date</th>
-                        <th className="px-4 py-3">Amount</th>
-                        <th className="px-4 py-3">Status</th>
-                        <th className="px-4 py-3">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-200 bg-white text-slate-700">
-                      {orderRows.map(({ id, customer, product, date, amount, status }) => (
-                        <tr key={id}>
-                          <td className="px-4 py-3 font-semibold text-slate-900">{id}</td>
-                          <td className="px-4 py-3">{customer}</td>
-                          <td className="px-4 py-3">{product}</td>
-                          <td className="px-4 py-3">{date}</td>
-                          <td className="px-4 py-3 font-semibold text-slate-900">{amount}</td>
-                          <td className="px-4 py-3">
-                            <span className={`inline-flex rounded-full px-2 py-1 text-[11px] font-semibold ${status === 'Processing' ? 'bg-orange-50 text-orange-700' : status === 'Shipped' ? 'bg-sky-50 text-sky-700' : status === 'Delivered' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
-                              {status}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3">
-                            <button type="button" aria-label={`More actions for ${id}`} className="rounded-md p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-700">
-                              <ChevronRight className="h-4 w-4" />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                <div className="mt-4 flex items-center justify-between text-xs text-slate-500">
-                  <span>Showing 5 of 124 orders</span>
-                  <button type="button" className="font-semibold text-emerald-700 hover:text-emerald-800">View Full Order History</button>
-                </div>
-              </article>
-
-              <article className="space-y-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                <div className="flex items-center justify-between">
+              <section className="mt-5 rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
-                    <h2 className="text-xl font-bold text-slate-900">Inventory Distribution</h2>
-                    <p className="mt-1 text-sm text-slate-500">Current stock mix across categories.</p>
+                    <h2 className="text-base font-bold text-slate-900">Recent orders</h2>
+                    <p className="mt-1 text-sm text-slate-500">Stay on top of your latest buyer activity.</p>
                   </div>
-                  <button type="button" className="text-xs font-semibold text-emerald-700">View Schedule</button>
+                  <button type="button" onClick={() => selectSection('Orders')} className="inline-flex items-center gap-1 text-sm font-semibold text-emerald-800 hover:underline">
+                    View orders <ArrowRight aria-hidden="true" className="h-4 w-4" />
+                  </button>
                 </div>
-
-                <div className="flex flex-col items-center justify-center gap-4">
-                  <div className="relative grid h-40 w-40 place-items-center rounded-full bg-[conic-gradient(#10b981_0_45%,#f59e0b_45%_75%,#38bdf8_75%_90%,#a78bfa_90%_100%)]">
-                    <div className="grid h-24 w-24 place-items-center rounded-full bg-white text-center shadow-inner">
-                      <div>
-                        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">Total</p>
-                        <p className="mt-1 text-3xl font-bold text-slate-900">450</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="w-full space-y-3 text-sm text-slate-700">
-                    {stockLegend.map(({ label, value, color }) => (
-                      <div key={label} className="flex items-center justify-between gap-3 rounded-lg bg-slate-50 px-3 py-2">
-                        <div className="flex items-center gap-2">
-                          <span className={`h-2.5 w-2.5 rounded-full ${color}`} />
-                          <span>{label}</span>
-                        </div>
-                        <span className="font-semibold">{value}</span>
-                      </div>
-                    ))}
-                  </div>
+                <div className="mt-5 flex flex-col items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50/70 px-5 py-8 text-center">
+                  <ClipboardList aria-hidden="true" className="h-6 w-6 text-slate-400" />
+                  <p className="mt-2 text-sm font-semibold text-slate-700">No order activity to show</p>
+                  <p className="mt-1 text-xs text-slate-500">New orders will be listed here when available.</p>
                 </div>
-              </article>
-            </section>
-
-            <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <h2 className="text-xl font-bold text-slate-900">Logistics Queue</h2>
-                  <p className="mt-1 text-sm text-slate-500">Track shipment and delivery stages.</p>
-                </div>
-                <div className="flex items-center gap-2 rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-700">
-                  85% complete
-                </div>
-              </div>
-
-              <div className="mt-5 grid gap-4 md:grid-cols-2">
-                {logisticsEntries.map(({ title, subtitle, time, status }) => (
-                  <div key={title} className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3.5">
-                    <div className={`mt-1 flex h-5 w-5 items-center justify-center rounded-full ${status === 'done' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
-                      {status === 'done' ? <CheckCircleIcon /> : <AlertIcon />}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="font-semibold text-slate-900">{title}</p>
-                        <span className="text-[11px] text-slate-500">{time}</span>
-                      </div>
-                      <p className="mt-1 text-sm text-slate-600">{subtitle}</p>
-                    </div>
-                  </div>
-                ))}
+              </section>
+            </>
+          ) : (
+            <section className="mt-7 rounded-xl border border-slate-200 bg-white p-5 sm:p-8">
+              {productNotice && (
+                <p role="status" aria-live="polite" className="mb-5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900">
+                  {productNotice}
+                </p>
+              )}
+              <div className="mx-auto flex min-h-[340px] max-w-lg flex-col items-center justify-center text-center">
+                <span className="grid h-14 w-14 place-items-center rounded-2xl bg-emerald-50 text-emerald-800">
+                  <EmptyIcon aria-hidden="true" className="h-6 w-6" />
+                </span>
+                <h2 className="mt-5 text-lg font-bold text-slate-900">{emptyState.title}</h2>
+                <p className="mt-2 max-w-md text-sm leading-6 text-slate-500">{emptyState.description}</p>
+                {activeSection === 'Products' && (
+                  <button type="button" onClick={openProductForm} className="mt-5 inline-flex items-center gap-2 rounded-lg bg-emerald-800 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700">
+                    <Plus aria-hidden="true" className="h-4 w-4" />
+                    Add a product
+                  </button>
+                )}
+                {activeSection !== 'Products' && activeSection !== 'Settings' && (
+                  <button type="button" onClick={() => selectSection('Overview')} className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-emerald-800 hover:underline">
+                    Back to overview <ArrowRight aria-hidden="true" className="h-4 w-4" />
+                  </button>
+                )}
               </div>
             </section>
-          </main>
+          )}
 
-          <footer className="border-t border-slate-200 bg-[#f8fafb] px-4 py-6 text-sm text-slate-500 md:px-6">
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-              <div className="flex items-center gap-3">
-                <div className="grid h-8 w-8 place-items-center rounded-md bg-[#0f2335] text-xs font-bold text-white">T</div>
-                <div>
-                  <p className="font-semibold text-slate-700">Secure vendor ecosystem</p>
-                  <p className="text-xs text-slate-500">Empowering the next generation of trade and commerce.</p>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500">
-                <span>Privacy Policy</span>
-                <span>Terms of Service</span>
-                <span>Security</span>
-                <span>Contact Support</span>
-              </div>
-            </div>
+          <footer className="mt-8 flex flex-col gap-2 border-t border-slate-200 py-5 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
+            <span>TradeSphere Vendor Workspace</span>
+            <span>Need assistance? <a href="mailto:support@tradesphere.africa" className="font-semibold text-emerald-800 hover:underline">Contact vendor support</a></span>
           </footer>
-        </div>
+        </main>
       </div>
+
+      {productFormOpen && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/40 p-0 backdrop-blur-[2px] sm:items-center sm:p-5" onMouseDown={(event) => {
+          if (event.target === event.currentTarget) setProductFormOpen(false);
+        }}>
+          <section role="dialog" aria-modal="true" aria-labelledby="add-product-title" className="max-h-[92vh] w-full max-w-xl overflow-y-auto rounded-t-2xl bg-white p-5 shadow-2xl sm:rounded-2xl sm:p-7">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.14em] text-emerald-800">Product catalogue</p>
+                <h2 id="add-product-title" className="mt-1 text-xl font-bold text-slate-900">Add a product</h2>
+                <p className="mt-1 text-sm text-slate-500">Enter the product details you’ll need for your listing.</p>
+              </div>
+              <button type="button" aria-label="Close add product form" onClick={() => setProductFormOpen(false)} className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-slate-500 hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-emerald-700">
+                <X aria-hidden="true" className="h-4 w-4" />
+              </button>
+            </div>
+            <form onSubmit={submitProductForm} className="mt-6 space-y-4">
+              <label className="block text-sm font-semibold text-slate-700">
+                Product name
+                <input required name="productName" placeholder="e.g. Commercial water pump" className="mt-1.5 h-11 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-emerald-700 focus:ring-4 focus:ring-emerald-700/10" />
+              </label>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className="block text-sm font-semibold text-slate-700">
+                  Category
+                  <input required name="category" placeholder="Choose a category" className="mt-1.5 h-11 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-emerald-700 focus:ring-4 focus:ring-emerald-700/10" />
+                </label>
+                <label className="block text-sm font-semibold text-slate-700">
+                  SKU <span className="font-normal text-slate-400">(optional)</span>
+                  <input name="sku" placeholder="Your stock reference" className="mt-1.5 h-11 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-emerald-700 focus:ring-4 focus:ring-emerald-700/10" />
+                </label>
+                <label className="block text-sm font-semibold text-slate-700">
+                  Unit price
+                  <input required min="0" step="0.01" type="number" name="price" placeholder="0.00" className="mt-1.5 h-11 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-emerald-700 focus:ring-4 focus:ring-emerald-700/10" />
+                </label>
+                <label className="block text-sm font-semibold text-slate-700">
+                  Available quantity
+                  <input required min="0" step="1" type="number" name="quantity" placeholder="0" className="mt-1.5 h-11 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-emerald-700 focus:ring-4 focus:ring-emerald-700/10" />
+                </label>
+              </div>
+              <label className="block text-sm font-semibold text-slate-700">
+                Description
+                <textarea name="description" rows="3" placeholder="Describe the product for buyers" className="mt-1.5 w-full resize-y rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none transition placeholder:text-slate-400 focus:border-emerald-700 focus:ring-4 focus:ring-emerald-700/10" />
+              </label>
+              <p className="rounded-lg border border-amber-200 bg-amber-50 px-3.5 py-3 text-xs leading-5 text-amber-900">
+                Product publishing is not connected to a vendor service yet. Submitting this form will not save or publish your product.
+              </p>
+              {productNotice && <p role="alert" aria-live="polite" className="text-sm font-medium text-rose-700">{productNotice}</p>}
+              <div className="flex flex-col-reverse gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:justify-end">
+                <button type="button" onClick={() => setProductFormOpen(false)} className="h-10 rounded-lg border border-slate-300 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+                  Cancel
+                </button>
+                <button type="submit" className="h-10 rounded-lg bg-emerald-800 px-4 text-sm font-semibold text-white transition hover:bg-emerald-900">
+                  Preview product details
+                </button>
+              </div>
+            </form>
+          </section>
+        </div>
+      )}
     </div>
-  </div>
-);
-
-const CheckCircleIcon = () => (
-  <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    <path d="M20 6 9 17l-5-5" />
-  </svg>
-);
-
-const AlertIcon = () => (
-  <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    <path d="M12 9v4" />
-    <path d="M12 17h.01" />
-    <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" />
-  </svg>
-);
+  );
+};
 
 export default VendorWorkspace;
