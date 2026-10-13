@@ -15,6 +15,7 @@ import ProductDetails from "./ProductDetails";
 import SignIn from "./SignIn";
 import SignUp from "./SignUp";
 import VendorWorkspace from "./VendorWorkspace";
+import AdminDisputes from "./AdminDisputes";
 import { useAuth } from "../hooks/useAuth";
 
 const AppRoutes = () => {
@@ -45,6 +46,7 @@ const AppRoutes = () => {
         <Route index element={<Home />} />
         <Route path="marketplace" element={<Marketplace />} />
         <Route path="vendor-workspace" element={<VendorWorkspace />} />
+        <Route path="admin/disputes" element={<AdminDisputes />} />
         <Route path="products/:productId" element={<ProductDetails />} />
         <Route path="cart" element={<Cart />} />
         <Route element={<RequireAuth />}>
