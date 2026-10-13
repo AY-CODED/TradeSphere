@@ -15,7 +15,7 @@ import ProductDetails from "./ProductDetails";
 import SignIn from "./SignIn";
 import SignUp from "./SignUp";
 import VendorWorkspace from "./VendorWorkspace";
-import AdminDisputes from "./AdminDisputes";
+import AdminDashboard from "./AdminDashboard";
 import { useAuth } from "../hooks/useAuth";
 
 const AppRoutes = () => {
@@ -42,11 +42,13 @@ const AppRoutes = () => {
     <Routes>
       <Route path="/signin" element={<RedirectAuthenticated><SignIn /></RedirectAuthenticated>} />
       <Route path="/signup" element={<RedirectAuthenticated><SignUp /></RedirectAuthenticated>} />
-      <Route path="/vendor-workspace" element={<VendorWorkspace />} />
+      <Route element={<RequireAuth />}>
+        <Route path="/vendor-workspace" element={<VendorWorkspace />} />
+        <Route path="/admin/*" element={<AdminDashboard />} />
+      </Route>
       <Route path="/" element={<PageLayout />}>
         <Route index element={<Home />} />
         <Route path="marketplace" element={<Marketplace />} />
-        <Route path="admin/disputes" element={<AdminDisputes />} />
         <Route path="products/:productId" element={<ProductDetails />} />
         <Route path="cart" element={<Cart />} />
         <Route element={<RequireAuth />}>

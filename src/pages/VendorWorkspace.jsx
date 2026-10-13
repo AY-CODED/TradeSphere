@@ -10,6 +10,7 @@ import {
   ChevronRight,
   CircleHelp,
   ClipboardList,
+  History,
   LayoutDashboard,
   Package,
   Plus,
@@ -33,6 +34,7 @@ const navigation = [
   { label: 'Analytics', icon: BarChart3, description: 'Understand your performance' },
   { label: 'Customers', icon: UsersRound, description: 'Build buyer relationships' },
   { label: 'Payouts', icon: Wallet, description: 'Review your payment activity' },
+  { label: 'Activity', icon: History, description: 'Review actions recorded in this workspace session' },
   { label: 'Settings', icon: Settings2, description: 'Manage business preferences' },
 ];
 
@@ -85,6 +87,8 @@ const VendorWorkspace = () => {
   const [activeSection, setActiveSection] = useState('Overview');
   const [productFormOpen, setProductFormOpen] = useState(false);
   const [productNotice, setProductNotice] = useState('');
+  const [products, setProducts] = useState([]);
+  const [vendorActivity, setVendorActivity] = useState([]);
   const { user } = useAuth();
   const vendorName = user?.businessName || user?.fullName || user?.name || user?.email || 'Your business';
   const initials = vendorName.split(/[\s@.]+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase();
@@ -96,10 +100,37 @@ const VendorWorkspace = () => {
 
   const submitProductForm = (event) => {
     event.preventDefault();
-    setProductNotice('Your vendor product service is not connected yet. Nothing was saved.');
+    const formData = new FormData(event.currentTarget);
+    const product = {
+      id: `DEMO-${Date.now()}`,
+      name: String(formData.get('productName') || '').trim(),
+      category: String(formData.get('category') || '').trim(),
+      sku: String(formData.get('sku') || '').trim() || '—',
+      price: Number(formData.get('price')),
+      quantity: Number(formData.get('quantity')),
+      createdAt: new Date().toLocaleString(),
+    };
+    setProducts((current) => [product, ...current]);
+    setVendorActivity((current) => [{
+      id: product.id,
+      action: 'Added product to demo catalogue',
+      detail: `${product.name} · ${product.category}`,
+      time: product.createdAt,
+    }, ...current]);
+    setProductNotice(`${product.name} was added to this session's demo catalogue. It is not published to the marketplace.`);
+    setProductFormOpen(false);
+    setActiveSection('Products');
   };
 
   const selectSection = (section) => {
+    if (section !== activeSection) {
+      setVendorActivity((current) => [{
+        id: `VIEW-${Date.now()}`,
+        action: `Viewed ${section}`,
+        detail: `Opened the ${section.toLowerCase()} section.`,
+        time: new Date().toLocaleString(),
+      }, ...current]);
+    }
     setActiveSection(section);
     setProductNotice('');
   };
@@ -231,6 +262,12 @@ const VendorWorkspace = () => {
             </div>
           </div>
 
+          {productNotice && (
+            <p role="status" aria-live="polite" className="mt-5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900">
+              {productNotice}
+            </p>
+          )}
+
           {activeSection === 'Overview' ? (
             <>
               <section aria-label="Business metrics" className="mt-7 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -319,13 +356,86 @@ const VendorWorkspace = () => {
                 </div>
               </section>
             </>
+          ) : activeSection === 'Products' ? (
+            <section className="mt-7 overflow-hidden rounded-xl border border-slate-200 bg-white">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 p-5">
+                <div>
+                  <h2 className="font-bold text-slate-900">Your product catalogue</h2>
+                  <p className="mt-1 text-sm text-slate-500">{products.length} product{products.length === 1 ? '' : 's'} added in this session</p>
+                </div>
+                <span className="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800">Session demo</span>
+              </div>
+              {products.length ? (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
+                    <thead className="bg-slate-50 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                      <tr>
+                        <th className="px-5 py-3">Product</th>
+                        <th className="px-5 py-3">SKU</th>
+                        <th className="px-5 py-3">Unit price</th>
+                        <th className="px-5 py-3">Available</th>
+                        <th className="px-5 py-3">Added</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {products.map((product) => (
+                        <tr key={product.id}>
+                          <td className="px-5 py-4"><p className="font-semibold text-slate-900">{product.name}</p><p className="mt-0.5 text-xs text-slate-500">{product.category}</p></td>
+                          <td className="px-5 py-4 text-slate-600">{product.sku}</td>
+                          <td className="px-5 py-4 font-semibold text-slate-800">${product.price.toFixed(2)}</td>
+                          <td className="px-5 py-4 text-slate-600">{product.quantity}</td>
+                          <td className="px-5 py-4 text-xs text-slate-500">{product.createdAt}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="grid min-h-64 place-items-center px-5 py-10 text-center">
+                  <div>
+                    <Package aria-hidden="true" className="mx-auto h-8 w-8 text-slate-400" />
+                    <p className="mt-3 text-sm font-semibold text-slate-800">Your catalogue is empty</p>
+                    <p className="mt-1 text-xs text-slate-500">Add a product to see it listed here in this session.</p>
+                    <button type="button" onClick={openProductForm} className="mt-4 inline-flex items-center gap-2 rounded-lg bg-emerald-800 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-900">
+                      <Plus aria-hidden="true" className="h-4 w-4" /> Add a product
+                    </button>
+                  </div>
+                </div>
+              )}
+              <p className="border-t border-slate-200 bg-slate-50 px-5 py-3 text-xs text-slate-500">Products are visible only in this browser session and are not published to the marketplace.</p>
+            </section>
+          ) : activeSection === 'Activity' ? (
+            <section className="mt-7 overflow-hidden rounded-xl border border-slate-200 bg-white">
+              <div className="border-b border-slate-200 p-5">
+                <h2 className="font-bold text-slate-900">Your workspace activity</h2>
+                <p className="mt-1 text-sm text-slate-500">Actions recorded during this browser session.</p>
+              </div>
+              {vendorActivity.length ? (
+                <ol className="divide-y divide-slate-100">
+                  {vendorActivity.map((activity) => (
+                    <li key={activity.id} className="flex gap-3 px-5 py-4">
+                      <span className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-emerald-50 text-emerald-800"><History aria-hidden="true" className="h-4 w-4" /></span>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold text-slate-900">{activity.action}</p>
+                        <p className="mt-0.5 text-sm text-slate-500">{activity.detail}</p>
+                      </div>
+                      <time className="shrink-0 pt-1 text-[11px] text-slate-400">{activity.time}</time>
+                    </li>
+                  ))}
+                </ol>
+              ) : (
+                <div className="grid min-h-56 place-items-center px-5 py-10 text-center">
+                  <div>
+                    <History aria-hidden="true" className="mx-auto h-8 w-8 text-slate-400" />
+                    <p className="mt-3 text-sm font-semibold text-slate-800">No activity recorded yet</p>
+                    <p className="mt-1 text-xs text-slate-500">Workspace actions and products added in this session will appear here.</p>
+                  </div>
+                </div>
+              )}
+              <p className="border-t border-slate-200 bg-slate-50 px-5 py-3 text-xs text-slate-500">This session history is temporary. A connected vendor service is required for a permanent activity record.</p>
+            </section>
           ) : (
             <section className="mt-7 rounded-xl border border-slate-200 bg-white p-5 sm:p-8">
-              {productNotice && (
-                <p role="status" aria-live="polite" className="mb-5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900">
-                  {productNotice}
-                </p>
-              )}
               <div className="mx-auto flex min-h-[340px] max-w-lg flex-col items-center justify-center text-center">
                 <span className="grid h-14 w-14 place-items-center rounded-2xl bg-emerald-50 text-emerald-800">
                   <EmptyIcon aria-hidden="true" className="h-6 w-6" />
@@ -397,7 +507,7 @@ const VendorWorkspace = () => {
                 <textarea name="description" rows="3" placeholder="Describe the product for buyers" className="mt-1.5 w-full resize-y rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none transition placeholder:text-slate-400 focus:border-emerald-700 focus:ring-4 focus:ring-emerald-700/10" />
               </label>
               <p className="rounded-lg border border-amber-200 bg-amber-50 px-3.5 py-3 text-xs leading-5 text-amber-900">
-                Product publishing is not connected to a vendor service yet. Submitting this form will not save or publish your product.
+                This demo adds the product to your current session only. It will not publish to the marketplace or persist after you leave.
               </p>
               {productNotice && <p role="alert" aria-live="polite" className="text-sm font-medium text-rose-700">{productNotice}</p>}
               <div className="flex flex-col-reverse gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:justify-end">
@@ -405,7 +515,7 @@ const VendorWorkspace = () => {
                   Cancel
                 </button>
                 <button type="submit" className="h-10 rounded-lg bg-emerald-800 px-4 text-sm font-semibold text-white transition hover:bg-emerald-900">
-                  Preview product details
+                  Add to demo catalogue
                 </button>
               </div>
             </form>
