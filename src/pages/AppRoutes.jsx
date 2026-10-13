@@ -42,10 +42,10 @@ const AppRoutes = () => {
     <Routes>
       <Route path="/signin" element={<RedirectAuthenticated><SignIn /></RedirectAuthenticated>} />
       <Route path="/signup" element={<RedirectAuthenticated><SignUp /></RedirectAuthenticated>} />
+      <Route path="/vendor-workspace" element={<VendorWorkspace />} />
       <Route path="/" element={<PageLayout />}>
         <Route index element={<Home />} />
         <Route path="marketplace" element={<Marketplace />} />
-        <Route path="vendor-workspace" element={<VendorWorkspace />} />
         <Route path="admin/disputes" element={<AdminDisputes />} />
         <Route path="products/:productId" element={<ProductDetails />} />
         <Route path="cart" element={<Cart />} />
