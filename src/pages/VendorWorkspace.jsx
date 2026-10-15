@@ -13,10 +13,12 @@ import {
   ImagePlus,
   LayoutDashboard,
   Package,
+  Pencil,
   Plus,
   Settings2,
   ShoppingBag,
   Sparkles,
+  Trash2,
   UsersRound,
   Wallet,
   X,
@@ -25,7 +27,13 @@ import { Link } from 'react-router-dom';
 import Logo from '../assets/images/Logo.png';
 import LogoutButton from '../components/auth/LogoutButton';
 import { useAuth } from '../hooks/useAuth';
-import { createProduct, getVendorOrders, getVendorProducts } from '../api/auth';
+import {
+  createProduct,
+  deleteProduct as deleteProductApi,
+  getVendorOrders,
+  getVendorProducts,
+  updateProduct as updateProductApi,
+} from '../api/auth';
 import { uploadImageToCloudinary } from '../utils/cloudinary';
 import { formatPrice } from '../utils/formatPrice';
 
@@ -97,6 +105,8 @@ const initialProductForm = {
 const VendorWorkspace = () => {
   const [activeSection, setActiveSection] = useState('Overview');
   const [productFormOpen, setProductFormOpen] = useState(false);
+  const [editingProductId, setEditingProductId] = useState(null);
+  const [deletingProductId, setDeletingProductId] = useState(null);
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
   const [vendorActivity, setVendorActivity] = useState([]);
@@ -146,7 +156,9 @@ const VendorWorkspace = () => {
 
   useEffect(() => {
     return () => {
-      if (imagePreview) URL.revokeObjectURL(imagePreview);
+      if (imagePreview && imagePreview.startsWith('blob:')) {
+        URL.revokeObjectURL(imagePreview);
+      }
     };
   }, [imagePreview]);
 
@@ -194,11 +206,56 @@ const VendorWorkspace = () => {
   ];
 
   const openProductForm = () => {
+    setEditingProductId(null);
     setProductError('');
     setFormValues(initialProductForm);
     setImageFile(null);
     setImagePreview('');
     setProductFormOpen(true);
+  };
+
+  const openEditProductForm = (product) => {
+    setEditingProductId(product.id);
+    setProductError('');
+    setFormValues({
+      productName: product.name || product.productName || '',
+      category: product.category || '',
+      sku: product.sku || '',
+      price: product.price !== undefined && product.price !== null ? String(product.price) : '',
+      quantity: product.stock !== undefined && product.stock !== null ? String(product.stock) : '0',
+      description: product.description || '',
+      imageUrl: product.imageUrl || '',
+    });
+    setImageFile(null);
+    setImagePreview(product.imageUrl || '');
+    setProductFormOpen(true);
+  };
+
+  const handleDeleteProduct = async (product) => {
+    const productTitle = product.name || product.productName || 'this product';
+    if (!window.confirm(`Delete "${productTitle}" from your catalogue?`)) return;
+
+    setDeletingProductId(product.id);
+    setDataError('');
+    setProductSuccess('');
+    try {
+      await deleteProductApi(product.id);
+      setProducts((prev) => prev.filter((item) => item.id !== product.id));
+      setProductSuccess(`"${productTitle}" was deleted from your catalogue.`);
+      setVendorActivity((current) => [
+        {
+          id: `DELETE-${Date.now()}`,
+          action: 'Deleted a product',
+          detail: `Removed ${productTitle} from the catalogue.`,
+          time: new Date().toLocaleString(),
+        },
+        ...current,
+      ]);
+    } catch (error) {
+      setDataError(error instanceof Error ? error.message : 'Unable to delete product.');
+    } finally {
+      setDeletingProductId(null);
+    }
   };
 
   const handleFieldChange = (field) => (event) => {
@@ -249,26 +306,56 @@ const VendorWorkspace = () => {
       const imageUrl = imageFile
         ? await uploadImageToCloudinary(imageFile)
         : formValues.imageUrl.trim();
-      await createProduct({
-        name: formValues.productName.trim(),
-        category: formValues.category.trim(),
-        sku: formValues.sku.trim(),
-        price,
-        stock,
-        description: formValues.description.trim(),
-        imageUrl,
-        vendorId,
-      });
+
+      if (editingProductId) {
+        const updated = await updateProductApi(editingProductId, {
+          name: formValues.productName.trim(),
+          category: formValues.category.trim(),
+          sku: formValues.sku.trim(),
+          price,
+          stock,
+          description: formValues.description.trim(),
+          imageUrl,
+        });
+        setProducts((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
+        setProductSuccess(`"${updated.name}" has been updated.`);
+        setVendorActivity((current) => [
+          {
+            id: `EDIT-${Date.now()}`,
+            action: 'Updated a product',
+            detail: `Updated details for ${updated.name}.`,
+            time: new Date().toLocaleString(),
+          },
+          ...current,
+        ]);
+      } else {
+        await createProduct({
+          name: formValues.productName.trim(),
+          category: formValues.category.trim(),
+          sku: formValues.sku.trim(),
+          price,
+          stock,
+          description: formValues.description.trim(),
+          imageUrl,
+          vendorId,
+          vendorName,
+        });
+        setProductSuccess('Product added to your catalogue.');
+        setVendorActivity((current) => [
+          {
+            id: `PRODUCT-${Date.now()}`,
+            action: 'Added a product',
+            detail: `Added ${formValues.productName.trim()} to the catalogue.`,
+            time: new Date().toLocaleString(),
+          },
+          ...current,
+        ]);
+        setIsLoading(true);
+        setRefreshKey((current) => current + 1);
+      }
+
+      setEditingProductId(null);
       setProductFormOpen(false);
-      setProductSuccess('Product added to your catalogue.');
-      setVendorActivity((current) => [{
-        id: `PRODUCT-${Date.now()}`,
-        action: 'Added a product',
-        detail: `Added ${formValues.productName.trim()} to the catalogue.`,
-        time: new Date().toLocaleString(),
-      }, ...current]);
-      setIsLoading(true);
-      setRefreshKey((current) => current + 1);
     } catch (error) {
       setProductError(error instanceof Error ? error.message : 'Unable to save this product. Please try again.');
     } finally {
@@ -278,12 +365,15 @@ const VendorWorkspace = () => {
 
   const selectSection = (section) => {
     if (section !== activeSection) {
-      setVendorActivity((current) => [{
-        id: `VIEW-${Date.now()}`,
-        action: `Viewed ${section}`,
-        detail: `Opened the ${section.toLowerCase()} section.`,
-        time: new Date().toLocaleString(),
-      }, ...current]);
+      setVendorActivity((current) => [
+        {
+          id: `VIEW-${Date.now()}`,
+          action: `Viewed ${section}`,
+          detail: `Opened the ${section.toLowerCase()} section.`,
+          time: new Date().toLocaleString(),
+        },
+        ...current,
+      ]);
     }
     setActiveSection(section);
     setProductError('');
@@ -484,11 +574,30 @@ const VendorWorkspace = () => {
                               </p>
                             </div>
                           </div>
-                          <div className="text-right">
-                            <p className="text-sm font-bold text-emerald-800">
-                              {formatPrice ? formatPrice(Number(product.price || 0)) : `$${Number(product.price || 0).toFixed(2)}`}
-                            </p>
-                            <p className="mt-0.5 text-xs text-slate-500">{product.stock ?? 0} in stock</p>
+                          <div className="flex items-center gap-3">
+                            <div className="text-right">
+                              <p className="text-sm font-bold text-emerald-800">
+                                {formatPrice ? formatPrice(Number(product.price || 0)) : `$${Number(product.price || 0).toFixed(2)}`}
+                              </p>
+                              <p className="mt-0.5 text-xs text-slate-500">{product.stock ?? 0} in stock</p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => openEditProductForm(product)}
+                              aria-label={`Edit ${product.name || product.productName}`}
+                              className="rounded-lg border border-slate-200 p-2 text-slate-600 hover:bg-slate-50 hover:text-emerald-800"
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              disabled={deletingProductId === product.id}
+                              onClick={() => handleDeleteProduct(product)}
+                              aria-label={`Delete ${product.name || product.productName}`}
+                              className="rounded-lg border border-slate-200 p-2 text-slate-600 hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700 disabled:opacity-50"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
                           </div>
                         </div>
                       ))}
@@ -548,7 +657,8 @@ const VendorWorkspace = () => {
                       <th className="pb-3 px-4">Category</th>
                       <th className="pb-3 px-4">SKU</th>
                       <th className="pb-3 px-4">Price</th>
-                      <th className="pb-3 pl-4 text-right">Stock</th>
+                      <th className="pb-3 px-4">Stock</th>
+                      <th className="pb-3 pl-4 text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -574,12 +684,33 @@ const VendorWorkspace = () => {
                         <td className="py-4 px-4 font-semibold text-slate-900">
                           {formatPrice ? formatPrice(Number(product.price || 0)) : `$${Number(product.price || 0).toFixed(2)}`}
                         </td>
-                        <td className="py-4 pl-4 text-right">
+                        <td className="py-4 px-4">
                           <span className={`inline-block rounded-full px-2.5 py-1 text-xs font-bold ${
                             Number(product.stock) > 0 ? 'bg-emerald-50 text-emerald-800' : 'bg-rose-50 text-rose-800'
                           }`}>
                             {product.stock ?? 0} in stock
                           </span>
+                        </td>
+                        <td className="py-4 pl-4 text-right">
+                          <div className="inline-flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => openEditProductForm(product)}
+                              className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-emerald-800"
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                              Edit
+                            </button>
+                            <button
+                              type="button"
+                              disabled={deletingProductId === product.id}
+                              onClick={() => handleDeleteProduct(product)}
+                              className="inline-flex items-center gap-1 rounded-lg border border-rose-200 bg-rose-50/60 px-2.5 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-100 disabled:opacity-50"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                              {deletingProductId === product.id ? 'Deleting…' : 'Delete'}
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -609,7 +740,7 @@ const VendorWorkspace = () => {
                   </div>
                 ))}
               </div>
-              </section>
+            </section>
           ) : activeSection === 'Activity' && vendorActivity.length > 0 ? (
             <section aria-label="Workspace activity" className="mt-7 divide-y divide-slate-100 rounded-xl border border-slate-200 bg-white px-5 sm:px-6">
               {vendorActivity.map((activity) => (
@@ -657,12 +788,18 @@ const VendorWorkspace = () => {
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.14em] text-emerald-800">Product catalogue</p>
-                <h2 id="add-product-title" className="mt-1 text-xl font-bold text-slate-900">Add a product</h2>
-                <p className="mt-1 text-sm text-slate-500">Upload a product image to Cloudinary and publish to TradeSphere.</p>
+                <h2 id="add-product-title" className="mt-1 text-xl font-bold text-slate-900">
+                  {editingProductId ? 'Edit product' : 'Add a product'}
+                </h2>
+                <p className="mt-1 text-sm text-slate-500">
+                  {editingProductId
+                    ? 'Update the product details and stock in your TradeSphere catalogue.'
+                    : 'Upload a product image to Cloudinary and publish to TradeSphere.'}
+                </p>
               </div>
               <button
                 type="button"
-                aria-label="Close add product form"
+                aria-label="Close product form"
                 onClick={() => setProductFormOpen(false)}
                 className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-slate-500 hover:bg-slate-100"
               >
@@ -795,7 +932,11 @@ const VendorWorkspace = () => {
                   disabled={isSubmitting}
                   className="h-10 rounded-lg bg-emerald-800 px-4 text-sm font-semibold text-white transition hover:bg-emerald-900 disabled:cursor-wait disabled:opacity-60"
                 >
-                  {isSubmitting ? 'Publishing…' : 'Publish product'}
+                  {isSubmitting
+                    ? 'Saving…'
+                    : editingProductId
+                    ? 'Save changes'
+                    : 'Publish product'}
                 </button>
               </div>
             </form>

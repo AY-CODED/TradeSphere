@@ -97,6 +97,15 @@ export const createProduct = (productData) => request('/products', {
   body: productData,
 });
 
+export const updateProduct = (productId, productData) => request(`/products/${productId}`, {
+  method: 'PUT',
+  body: productData,
+});
+
+export const deleteProduct = (productId) => request(`/products/${productId}`, {
+  method: 'DELETE',
+});
+
 // --- Orders API ---
 export const placeOrder = (orderData) => request('/orders', {
   method: 'POST',
