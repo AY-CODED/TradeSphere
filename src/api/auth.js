@@ -124,6 +124,17 @@ export const getBuyerOrders = (buyerId) => request(`/orders/buyer/${buyerId}`);
 
 export const getVendorOrders = (vendorId) => request(`/orders/vendor/${vendorId}`);
 
+// --- Payments API ---
+export const getMyPayments = () => request('/payments/me');
+
+export const getVendorPayments = (vendorId) => request(`/payments/vendor/${vendorId}`);
+
+export const getPaymentByOrder = (orderId) => request(`/payments/order/${orderId}`);
+
+export const releaseOrderEscrow = (orderId) => request(`/payments/order/${orderId}/release`, {
+  method: 'POST',
+});
+
 // --- Business Verification (KYC) API ---
 export const getMyVerification = () => request('/verification/me');
 

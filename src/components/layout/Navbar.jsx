@@ -18,6 +18,13 @@ const baseNavigation = [
   { label: 'Logistics', to: '/account?section=My%20orders', active: (pathname) => pathname.startsWith('/orders') },
 ];
 
+// Shared icon-button style: 36px touch target on phones, compact on larger screens.
+const iconButton =
+  'relative inline-flex items-center justify-center rounded p-2 text-slate-600 transition-colors hover:bg-emerald-50 hover:text-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 sm:p-1.5';
+
+const mobileLink =
+  'flex min-h-11 items-center rounded-md px-3 py-2.5 text-sm font-semibold text-slate-700 hover:bg-emerald-50';
+
 const Navbar = () => {
   const [search, setSearch] = useState('');
   const [isOpen, setIsOpen] = useState(false);
@@ -42,6 +49,8 @@ const Navbar = () => {
   const accountName = user?.fullName || user?.name || user?.email || 'Account';
   const accountInitials = accountName.split(/\s+/).slice(0, 2).map((part) => part[0]).join('').toUpperCase();
   const unreadCount = notifications.filter((n) => !n.read).length;
+  const unreadLabel = unreadCount > 99 ? '99+' : unreadCount;
+  const cartLabel = itemCount > 99 ? '99+' : itemCount;
 
   useEffect(() => {
     if (!user?.id) {
@@ -69,14 +78,33 @@ const Navbar = () => {
     };
   }, [user?.id, location.pathname]);
 
+  // Close menus whenever the route changes.
+  useEffect(() => {
+    setIsOpen(false);
+    setNotifOpen(false);
+  }, [location.pathname, location.search]);
+
+  // Close notifications on outside click / tap, and both menus on Escape.
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (notifRef.current && !notifRef.current.contains(event.target)) {
         setNotifOpen(false);
       }
     };
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        setNotifOpen(false);
+        setIsOpen(false);
+      }
+    };
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside, { passive: true });
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
   }, []);
 
   const handleNotificationClick = async (notification) => {
@@ -114,23 +142,35 @@ const Navbar = () => {
 
   return (
     <header className="sticky top-0 z-50 border-b border-slate-200 bg-[#f8f9fc] shadow-[0_1px_3px_rgba(15,23,42,0.08)]">
-      <div className="mx-auto flex min-h-12 max-w-[1600px] items-center gap-4 px-4 py-2 sm:px-6 lg:gap-7 lg:px-7">
-        <Link to="/" aria-label="TradeSphere home" className="flex w-[132px] shrink-0 items-center">
-          <img src={Logo} alt="TradeSphere" className="h-8 w-auto object-contain" />
+      {/*
+        Layout by breakpoint:
+        - < sm:   logo + actions on row 1, full-width search on row 2
+        - sm–lg:  logo + search + actions in one row, nav lives in the hamburger menu
+        - lg+:    full desktop nav inline
+      */}
+      <div className="mx-auto flex max-w-[1600px] flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2 min-[400px]:px-4 sm:flex-nowrap sm:px-6 lg:gap-x-7 lg:px-7">
+        <Link to="/" aria-label="TradeSphere home" className="flex w-[104px] shrink-0 items-center min-[400px]:w-[120px] lg:w-[132px]">
+          <img src={Logo} alt="TradeSphere" className="h-7 w-auto object-contain min-[400px]:h-8" />
         </Link>
 
-        <form onSubmit={submitSearch} className="relative hidden min-w-36 max-w-[500px] flex-1 sm:block">
-          <Search aria-hidden="true" className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-500" />
+        {/* Single search form, reflowed per breakpoint */}
+        <form
+          onSubmit={submitSearch}
+          role="search"
+          className="relative order-last basis-full sm:order-none sm:min-w-0 sm:max-w-[500px] sm:flex-1 sm:basis-auto"
+        >
+          <Search aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-500" />
           <input
+            type="search"
             aria-label="Search products and vendors"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Search products, vendors, or services..."
-            className="h-8 w-full rounded-md border border-transparent bg-[#e2f3eb] pl-8 pr-3 text-xs text-slate-800 outline-none transition placeholder:text-slate-500 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-600/15"
+            className="h-10 w-full rounded-md border border-transparent bg-[#e2f3eb] pl-8 pr-3 text-base text-slate-800 outline-none transition placeholder:text-slate-500 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-600/15 sm:h-8 sm:text-xs"
           />
         </form>
 
-        <nav aria-label="Main navigation" className="ml-auto hidden shrink-0 items-center gap-5 md:flex lg:gap-7">
+        <nav aria-label="Main navigation" className="ml-auto hidden shrink-0 items-center gap-5 lg:flex xl:gap-7">
           {navigation.map(({ label, to, active }) => (
             <Link
               key={label}
@@ -147,47 +187,56 @@ const Navbar = () => {
           </a>
         </nav>
 
-        <div className="ml-auto flex shrink-0 items-center gap-2 sm:ml-0 sm:gap-3">
-          <Link
-            to="/cart"
-            aria-label={`Shopping cart with ${itemCount} items`}
-            className="relative rounded p-1.5 text-slate-600 transition-colors hover:bg-emerald-50 hover:text-emerald-700"
-          >
+        <div className="ml-auto flex shrink-0 items-center gap-0.5 sm:gap-2 lg:ml-0 lg:gap-3">
+          <Link to="/cart" aria-label={`Shopping cart with ${itemCount} items`} className={iconButton}>
             <ShoppingCart className="h-4 w-4" />
-            {itemCount > 0 && <span className="absolute -right-1 -top-1 grid h-3.5 min-w-3.5 place-items-center rounded-full bg-emerald-700 px-0.5 text-[9px] font-bold text-white">{itemCount}</span>}
+            {itemCount > 0 && (
+              <span className="absolute -right-0.5 -top-0.5 grid h-3.5 min-w-3.5 place-items-center rounded-full bg-emerald-700 px-0.5 text-[9px] font-bold text-white">
+                {cartLabel}
+              </span>
+            )}
           </Link>
-          <a href="mailto:support@tradesphere.africa" aria-label="Messages and support" className="hidden rounded p-1.5 text-slate-600 transition-colors hover:bg-emerald-50 hover:text-emerald-700 sm:inline-flex">
+
+          <a href="mailto:support@tradesphere.africa" aria-label="Messages and support" className={`${iconButton} hidden lg:inline-flex`}>
             <Mail className="h-4 w-4" />
           </a>
-          <button
+
+          {/* <button
             type="button"
             aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
             aria-pressed={theme === 'dark'}
             onClick={toggleTheme}
-            className="rounded p-1.5 text-slate-600 transition-colors hover:bg-emerald-50 hover:text-emerald-700"
+            className={iconButton}
           >
             {theme === 'light' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
-          </button>
+          </button> */}
 
-          {/* Notification Bell & Dropdown */}
-          <div ref={notifRef} className="relative">
+          {/* Notification Bell & Dropdown.
+              On phones the panel anchors to the full-width header (wrapper is not
+              positioned) so it can never overflow the screen; from sm up it anchors to the bell. */}
+          <div ref={notifRef} className="sm:relative">
             <button
               type="button"
               aria-label="Notifications"
-              onClick={() => setNotifOpen((prev) => !prev)}
-              className="relative rounded p-1.5 text-slate-600 transition-colors hover:bg-emerald-50 hover:text-emerald-700"
+              aria-haspopup="true"
+              aria-expanded={notifOpen}
+              onClick={() => {
+                setNotifOpen((prev) => !prev);
+                setIsOpen(false);
+              }}
+              className={iconButton}
             >
               <Bell className="h-4 w-4" />
               {unreadCount > 0 && (
-                <span className="absolute -right-1 -top-1 grid h-3.5 min-w-3.5 place-items-center rounded-full bg-orange-500 px-0.5 text-[9px] font-bold text-white">
-                  {unreadCount}
+                <span className="absolute -right-0.5 -top-0.5 grid h-3.5 min-w-3.5 place-items-center rounded-full bg-orange-500 px-0.5 text-[9px] font-bold text-white">
+                  {unreadLabel}
                 </span>
               )}
             </button>
 
             {notifOpen && (
-              <div className="absolute right-0 mt-2 w-80 sm:w-96 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl z-50">
-                <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/70 px-4 py-3">
+              <div className="absolute inset-x-3 top-full z-50 mt-2 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl sm:inset-x-auto sm:right-0 sm:w-96">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 bg-slate-50/70 px-4 py-3">
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-bold uppercase tracking-wider text-slate-800">Notifications</span>
                     {unreadCount > 0 && (
@@ -200,7 +249,7 @@ const Navbar = () => {
                     <button
                       type="button"
                       onClick={handleMarkAllRead}
-                      className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 hover:underline"
+                      className="inline-flex min-h-8 items-center gap-1 text-[11px] font-semibold text-emerald-700 hover:underline"
                     >
                       <CheckCheck className="h-3.5 w-3.5" />
                       Mark all read
@@ -208,7 +257,7 @@ const Navbar = () => {
                   )}
                 </div>
 
-                <div className="max-h-80 overflow-y-auto divide-y divide-slate-100">
+                <div className="max-h-[60dvh] divide-y divide-slate-100 overflow-y-auto overscroll-contain sm:max-h-80">
                   {!user ? (
                     <div className="px-4 py-8 text-center text-xs text-slate-500">
                       Sign in to view your TradeSphere notifications.
@@ -239,7 +288,7 @@ const Navbar = () => {
                               {item.createdAt ? new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
                             </span>
                           </div>
-                          <p className="mt-0.5 text-xs leading-relaxed text-slate-600">{item.message}</p>
+                          <p className="mt-0.5 break-words text-xs leading-relaxed text-slate-600">{item.message}</p>
                         </div>
                       </button>
                     ))
@@ -251,64 +300,73 @@ const Navbar = () => {
 
           {user ? (
             <>
-              <Link to="/account" className="flex shrink-0 items-center gap-2 border-l border-slate-300 pl-3 text-xs font-medium text-slate-800">
-                <span className="grid h-[22px] w-[22px] place-items-center rounded-full bg-emerald-700 text-[9px] font-bold text-white">{accountInitials}</span>
-                <span className="hidden max-w-28 truncate whitespace-nowrap sm:inline">{accountName}</span>
+              <Link
+                to="/account"
+                aria-label="My account"
+                className="ml-1 flex shrink-0 items-center gap-2 border-l border-slate-300 pl-2 text-xs font-medium text-slate-800 sm:ml-0 sm:pl-3"
+              >
+                <span className="grid h-7 w-7 place-items-center rounded-full bg-emerald-700 text-[10px] font-bold text-white sm:h-[22px] sm:w-[22px] sm:text-[9px]">{accountInitials}</span>
+                <span className="hidden max-w-24 truncate whitespace-nowrap lg:inline xl:max-w-32">{accountName}</span>
               </Link>
-              <LogoutButton className="hidden rounded px-2 py-1.5 text-xs font-semibold text-slate-600 hover:bg-emerald-50 hover:text-emerald-800 sm:inline-flex" />
+              <LogoutButton className="hidden rounded px-2 py-1.5 text-xs font-semibold text-slate-600 hover:bg-emerald-50 hover:text-emerald-800 lg:inline-flex" />
             </>
           ) : (
-            <Link to="/signin" className="hidden whitespace-nowrap text-xs font-semibold text-emerald-800 hover:underline sm:inline">
+            <Link to="/signin" className="hidden whitespace-nowrap px-1 text-xs font-semibold text-emerald-800 hover:underline lg:inline">
               Sign in
             </Link>
           )}
+
           <button
             type="button"
             aria-label={isOpen ? 'Close navigation' : 'Open navigation'}
             aria-expanded={isOpen}
-            onClick={() => setIsOpen((open) => !open)}
-            className="rounded p-1.5 text-slate-600 hover:bg-slate-200 md:hidden"
+            aria-controls="mobile-navigation"
+            onClick={() => {
+              setIsOpen((open) => !open);
+              setNotifOpen(false);
+            }}
+            className="inline-flex items-center justify-center rounded p-2 text-slate-600 hover:bg-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 lg:hidden"
           >
             {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
         </div>
       </div>
 
-      <form onSubmit={submitSearch} className="relative px-4 pb-2 sm:hidden">
-        <Search aria-hidden="true" className="absolute left-7 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-500" />
-        <input
-          aria-label="Search products and vendors"
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          placeholder="Search products, vendors, or services..."
-          className="h-8 w-full rounded-md border border-transparent bg-[#e2f3eb] pl-8 pr-3 text-xs text-slate-800 outline-none placeholder:text-slate-500 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-600/15"
-        />
-      </form>
-
       {isOpen && (
-        <nav aria-label="Mobile navigation" className="border-t border-slate-200 bg-white px-4 py-3 md:hidden">
-          <div className="flex flex-col gap-1">
-            {navigation.map(({ label, to }) => (
-              <Link key={label} to={to} onClick={() => setIsOpen(false)} className="rounded-md px-3 py-2.5 text-sm font-semibold text-slate-700 hover:bg-emerald-50">
+        <nav
+          id="mobile-navigation"
+          aria-label="Mobile navigation"
+          className="max-h-[calc(100dvh-7rem)] overflow-y-auto overscroll-contain border-t border-slate-200 bg-white px-3 py-3 min-[400px]:px-4 sm:px-6 lg:hidden"
+        >
+          <div className="mx-auto flex max-w-[1600px] flex-col gap-1 sm:max-w-md sm:ml-auto sm:mr-0">
+            {navigation.map(({ label, to, active }) => (
+              <Link
+                key={label}
+                to={to}
+                onClick={() => setIsOpen(false)}
+                aria-current={active(location.pathname) ? 'page' : undefined}
+                className={`${mobileLink} ${active(location.pathname) ? 'bg-emerald-50 text-emerald-800' : ''}`}
+              >
                 {label}
               </Link>
             ))}
-            <a href="mailto:support@tradesphere.africa" onClick={() => setIsOpen(false)} className="rounded-md px-3 py-2.5 text-sm font-semibold text-slate-700 hover:bg-emerald-50">
+            <a href="mailto:support@tradesphere.africa" onClick={() => setIsOpen(false)} className={mobileLink}>
               Support
             </a>
+            <div className="my-1 border-t border-slate-100" />
             {user ? (
               <>
-                <Link to="/account" onClick={() => setIsOpen(false)} className="rounded-md px-3 py-2.5 text-sm font-semibold text-slate-700 hover:bg-emerald-50">
+                <Link to="/account" onClick={() => setIsOpen(false)} className={mobileLink}>
                   My account
                 </Link>
-                <LogoutButton className="rounded-md px-3 py-2.5 text-left text-sm font-semibold text-slate-700 hover:bg-emerald-50 disabled:opacity-60" />
+                <LogoutButton className="flex min-h-11 w-full items-center rounded-md px-3 py-2.5 text-left text-sm font-semibold text-slate-700 hover:bg-emerald-50 disabled:opacity-60" />
               </>
             ) : (
               <>
-                <Link to="/signin" onClick={() => setIsOpen(false)} className="rounded-md px-3 py-2.5 text-sm font-semibold text-slate-700 hover:bg-emerald-50">
+                <Link to="/signin" onClick={() => setIsOpen(false)} className={mobileLink}>
                   Sign in
                 </Link>
-                <Link to="/signup" onClick={() => setIsOpen(false)} className="rounded-md px-3 py-2.5 text-sm font-semibold text-slate-700 hover:bg-emerald-50">
+                <Link to="/signup" onClick={() => setIsOpen(false)} className={mobileLink}>
                   Create an account
                 </Link>
               </>

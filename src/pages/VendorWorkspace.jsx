@@ -1,5 +1,5 @@
-// src/pages/VendorWorkspace.jsx
-import { useEffect, useMemo, useState } from 'react';
+// src/pages/VendorWorkspace.jsx (With Live Notifications & Payouts/Payments Tab)
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowRight,
   BarChart3,
@@ -7,6 +7,7 @@ import {
   Boxes,
   Building2,
   Check,
+  CheckCheck,
   ChevronRight,
   CircleHelp,
   History,
@@ -16,6 +17,7 @@ import {
   Pencil,
   Plus,
   Settings2,
+  ShieldCheck,
   ShoppingBag,
   Sparkles,
   Trash2,
@@ -30,8 +32,12 @@ import { useAuth } from '../hooks/useAuth';
 import {
   createProduct,
   deleteProduct as deleteProductApi,
+  getNotifications,
   getVendorOrders,
+  getVendorPayments,
   getVendorProducts,
+  markAllNotificationsRead,
+  markNotificationRead,
   updateProduct as updateProductApi,
 } from '../api/auth';
 import { uploadImageToCloudinary } from '../utils/cloudinary';
@@ -44,7 +50,7 @@ const navigation = [
   { label: 'Inventory', icon: Boxes, description: 'Keep stock up to date' },
   { label: 'Analytics', icon: BarChart3, description: 'Understand your performance' },
   { label: 'Customers', icon: UsersRound, description: 'Build buyer relationships' },
-  { label: 'Payouts', icon: Wallet, description: 'Review your payment activity' },
+  { label: 'Payouts', icon: Wallet, description: 'Review your payment and escrow activity' },
   { label: 'Activity', icon: History, description: 'Review actions recorded in this workspace session' },
   { label: 'Settings', icon: Settings2, description: 'Manage business preferences' },
 ];
@@ -78,7 +84,7 @@ const sectionEmptyStates = {
   Payouts: {
     icon: Wallet,
     title: 'Payout activity will appear here',
-    description: 'Review your available balance and payout history as orders are completed.',
+    description: 'Escrow holds and released payouts appear here as buyers purchase your products.',
   },
   Activity: {
     icon: History,
@@ -109,6 +115,11 @@ const VendorWorkspace = () => {
   const [deletingProductId, setDeletingProductId] = useState(null);
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
+  const [payments, setPayments] = useState([]);
+  const [notifications, setNotifications] = useState([]);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const notifRef = useRef(null);
+
   const [vendorActivity, setVendorActivity] = useState([]);
   const [formValues, setFormValues] = useState(initialProductForm);
   const [imageFile, setImageFile] = useState(null);
@@ -119,6 +130,7 @@ const VendorWorkspace = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+
   const { user } = useAuth();
   const vendorId = user?.id;
   const workspaceLoading = Boolean(vendorId) && isLoading;
@@ -131,14 +143,23 @@ const VendorWorkspace = () => {
     .join('')
     .toUpperCase();
 
+  const unreadCount = notifications.filter((n) => !n.read).length;
+
   useEffect(() => {
     if (!vendorId) return undefined;
     let active = true;
-    Promise.all([getVendorProducts(vendorId), getVendorOrders(vendorId)])
-      .then(([fetchedProducts, fetchedOrders]) => {
+    Promise.all([
+      getVendorProducts(vendorId),
+      getVendorOrders(vendorId),
+      getVendorPayments(vendorId).catch(() => []),
+      getNotifications().catch(() => []),
+    ])
+      .then(([fetchedProducts, fetchedOrders, fetchedPayments, fetchedNotifications]) => {
         if (!active) return;
         setProducts(Array.isArray(fetchedProducts) ? fetchedProducts : []);
         setOrders(Array.isArray(fetchedOrders) ? fetchedOrders : []);
+        setPayments(Array.isArray(fetchedPayments) ? fetchedPayments : []);
+        setNotifications(Array.isArray(fetchedNotifications) ? fetchedNotifications : []);
         setDataError('');
       })
       .catch((error) => {
@@ -153,6 +174,16 @@ const VendorWorkspace = () => {
       active = false;
     };
   }, [vendorId, refreshKey]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (notifRef.current && !notifRef.current.contains(event.target)) {
+        setNotifOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -172,6 +203,22 @@ const VendorWorkspace = () => {
       return sum + (orderSubtotal || Number(order.totalAmount || 0));
     }, 0);
   }, [orders, vendorId]);
+
+  const escrowBalance = useMemo(
+    () =>
+      payments
+        .filter((p) => p.status === 'ESCROW_HELD')
+        .reduce((sum, p) => sum + Number(p.amount || 0), 0),
+    [payments]
+  );
+
+  const releasedBalance = useMemo(
+    () =>
+      payments
+        .filter((p) => p.status === 'RELEASED')
+        .reduce((sum, p) => sum + Number(p.amount || 0), 0),
+    [payments]
+  );
 
   const totalUnitsInStock = useMemo(
     () => products.reduce((sum, p) => sum + Number(p.stock || 0), 0),
@@ -198,12 +245,33 @@ const VendorWorkspace = () => {
       subtext: `${totalUnitsInStock} total unit(s) in stock`,
     },
     {
-      label: 'Unique buyers',
-      icon: UsersRound,
-      value: String(new Set(orders.map((o) => o.buyerId).filter(Boolean)).size),
-      subtext: 'Connected to live catalogue',
+      label: 'Escrow balance',
+      icon: ShieldCheck,
+      value: formatPrice ? formatPrice(escrowBalance) : `$${escrowBalance.toFixed(2)}`,
+      subtext: `Released: ${formatPrice ? formatPrice(releasedBalance) : `$${releasedBalance.toFixed(2)}`}`,
     },
   ];
+
+  const handleMarkNotificationRead = async (notif) => {
+    if (!notif.read) {
+      try {
+        await markNotificationRead(notif.id);
+        setNotifications((prev) => prev.map((n) => (n.id === notif.id ? { ...n, read: true } : n)));
+      } catch {
+        // ignore
+      }
+    }
+    setNotifOpen(false);
+  };
+
+  const handleMarkAllRead = async () => {
+    try {
+      await markAllNotificationsRead();
+      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    } catch {
+      // ignore
+    }
+  };
 
   const openProductForm = () => {
     setEditingProductId(null);
@@ -319,15 +387,6 @@ const VendorWorkspace = () => {
         });
         setProducts((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
         setProductSuccess(`"${updated.name}" has been updated.`);
-        setVendorActivity((current) => [
-          {
-            id: `EDIT-${Date.now()}`,
-            action: 'Updated a product',
-            detail: `Updated details for ${updated.name}.`,
-            time: new Date().toLocaleString(),
-          },
-          ...current,
-        ]);
       } else {
         await createProduct({
           name: formValues.productName.trim(),
@@ -341,15 +400,6 @@ const VendorWorkspace = () => {
           vendorName,
         });
         setProductSuccess('Product added to your catalogue.');
-        setVendorActivity((current) => [
-          {
-            id: `PRODUCT-${Date.now()}`,
-            action: 'Added a product',
-            detail: `Added ${formValues.productName.trim()} to the catalogue.`,
-            time: new Date().toLocaleString(),
-          },
-          ...current,
-        ]);
         setIsLoading(true);
         setRefreshKey((current) => current + 1);
       }
@@ -395,13 +445,6 @@ const VendorWorkspace = () => {
           </span>
         </div>
 
-        <div className="hidden px-6 pb-4 lg:block">
-          <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
-            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">Workspace</p>
-            <p className="mt-1 text-sm font-semibold text-slate-800">Vendor portal</p>
-          </div>
-        </div>
-
         <nav aria-label="Vendor workspace sections" className="flex gap-1 overflow-x-auto px-3 pb-3 lg:flex-1 lg:flex-col lg:gap-1.5 lg:overflow-y-auto lg:px-4 lg:pb-4">
           <p className="hidden px-3 pb-2 pt-4 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400 lg:block">Workspace</p>
           {navigation.map(({ label, icon: Icon }) => {
@@ -412,10 +455,8 @@ const VendorWorkspace = () => {
                 type="button"
                 aria-current={active ? 'page' : undefined}
                 onClick={() => selectSection(label)}
-                className={`inline-flex shrink-0 items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 lg:w-full ${
-                  active
-                    ? 'bg-emerald-800 text-white shadow-sm'
-                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                className={`inline-flex shrink-0 items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm font-semibold transition lg:w-full ${
+                  active ? 'bg-emerald-800 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                 }`}
               >
                 <Icon aria-hidden="true" className="h-4 w-4 shrink-0" />
@@ -451,14 +492,62 @@ const VendorWorkspace = () => {
               <span className="h-2 w-2 rounded-full bg-emerald-600" />
               Vendor service connected
             </span>
-            <button
-              type="button"
-              aria-label="Notifications"
-              title="Notifications"
-              className="grid h-9 w-9 place-items-center rounded-lg border border-slate-200 text-slate-600 transition hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700"
-            >
-              <Bell aria-hidden="true" className="h-4 w-4" />
-            </button>
+
+            <div ref={notifRef} className="relative">
+              <button
+                type="button"
+                aria-label="Notifications"
+                onClick={() => setNotifOpen((prev) => !prev)}
+                className="relative grid h-9 w-9 place-items-center rounded-lg border border-slate-200 text-slate-600 transition hover:bg-slate-50"
+              >
+                <Bell aria-hidden="true" className="h-4 w-4" />
+                {unreadCount > 0 && (
+                  <span className="absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-orange-500 px-1 text-[10px] font-bold text-white">
+                    {unreadCount}
+                  </span>
+                )}
+              </button>
+
+              {notifOpen && (
+                <div className="absolute right-0 mt-2 w-80 sm:w-96 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl z-50">
+                  <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-4 py-3">
+                    <span className="text-xs font-bold uppercase tracking-wider text-slate-800">Notifications</span>
+                    {unreadCount > 0 && (
+                      <button
+                        type="button"
+                        onClick={handleMarkAllRead}
+                        className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 hover:underline"
+                      >
+                        <CheckCheck className="h-3.5 w-3.5" /> Mark all read
+                      </button>
+                    )}
+                  </div>
+                  <div className="max-h-72 overflow-y-auto divide-y divide-slate-100">
+                    {notifications.length === 0 ? (
+                      <p className="px-4 py-8 text-center text-xs text-slate-500">No notifications yet.</p>
+                    ) : (
+                      notifications.map((notif) => (
+                        <button
+                          key={notif.id}
+                          type="button"
+                          onClick={() => handleMarkNotificationRead(notif)}
+                          className={`flex w-full items-start gap-3 px-4 py-3 text-left transition hover:bg-slate-50 ${
+                            notif.read ? 'bg-white' : 'bg-emerald-50/40'
+                          }`}
+                        >
+                          <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${notif.read ? 'bg-slate-300' : 'bg-emerald-600'}`} />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-bold text-slate-900">{notif.title}</p>
+                            <p className="mt-0.5 text-xs text-slate-600">{notif.message}</p>
+                          </div>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
             <div className="flex min-w-0 items-center gap-2.5 border-l border-slate-200 pl-3 sm:pl-4">
               <div aria-hidden="true" className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-emerald-100 text-xs font-bold text-emerald-900">
                 {initials || 'V'}
@@ -503,7 +592,7 @@ const VendorWorkspace = () => {
                 <button
                   type="button"
                   onClick={openProductForm}
-                  className="inline-flex h-10 items-center gap-2 rounded-lg bg-emerald-800 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700"
+                  className="inline-flex h-10 items-center gap-2 rounded-lg bg-emerald-800 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-900"
                 >
                   <Plus aria-hidden="true" className="h-4 w-4" />
                   Add product
@@ -640,7 +729,7 @@ const VendorWorkspace = () => {
                       <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-emerald-700 text-white">
                         <Check aria-hidden="true" className="h-4 w-4" />
                       </span>
-                      <span className="text-sm font-semibold text-emerald-950">Cloudinary & MongoDB connected</span>
+                      <span className="text-sm font-semibold text-emerald-950">Escrow & Cloudinary active</span>
                       <span className="ml-auto rounded-full bg-white px-2 py-1 text-[10px] font-bold text-emerald-800">Active</span>
                     </div>
                   </div>
@@ -716,6 +805,53 @@ const VendorWorkspace = () => {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            </section>
+          ) : activeSection === 'Payouts' && payments.length > 0 ? (
+            <section className="mt-7 space-y-5">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <article className="rounded-xl border border-slate-200 bg-white p-5">
+                  <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Available / Released Payouts</p>
+                  <p className="mt-2 text-3xl font-bold text-emerald-700">
+                    {formatPrice ? formatPrice(releasedBalance) : `$${releasedBalance.toFixed(2)}`}
+                  </p>
+                  <p className="mt-1 text-xs text-slate-500">Released after buyer packing approval</p>
+                </article>
+                <article className="rounded-xl border border-slate-200 bg-white p-5">
+                  <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Pending in Escrow</p>
+                  <p className="mt-2 text-3xl font-bold text-amber-600">
+                    {formatPrice ? formatPrice(escrowBalance) : `$${escrowBalance.toFixed(2)}`}
+                  </p>
+                  <p className="mt-1 text-xs text-slate-500">Protected until buyer approves packing proof</p>
+                </article>
+              </div>
+
+              <div className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
+                <h2 className="text-base font-bold text-slate-900">Escrow & Payment Ledger</h2>
+                <div className="mt-4 divide-y divide-slate-100">
+                  {payments.map((payment) => (
+                    <div key={payment.id} className="flex flex-wrap items-center justify-between gap-4 py-4">
+                      <div>
+                        <p className="font-bold text-slate-900">{payment.transactionReference || `PAY-${payment.id.slice(-6)}`}</p>
+                        <p className="mt-0.5 text-xs text-slate-500">
+                          Order #{String(payment.orderId).slice(-6).toUpperCase()} · Buyer: {payment.buyerName || 'Verified Buyer'}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <span className={`rounded-full px-3 py-1 text-xs font-bold ${
+                          payment.status === 'RELEASED'
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : 'bg-amber-100 text-amber-800'
+                        }`}>
+                          {payment.status}
+                        </span>
+                        <p className="font-bold text-slate-900">
+                          {formatPrice ? formatPrice(Number(payment.amount || 0)) : `$${Number(payment.amount || 0).toFixed(2)}`}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </section>
           ) : activeSection === 'Orders' && orders.length > 0 ? (
