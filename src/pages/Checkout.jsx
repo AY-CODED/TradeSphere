@@ -1,11 +1,10 @@
 // src/pages/Checkout.jsx
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { ArrowLeft, Check, CreditCard, MapPin, ShieldCheck, Truck } from 'lucide-react';
 import { formatPrice } from '../utils/formatPrice';
 import { useCart } from '../hooks/useCart';
 import { useAuth } from '../hooks/useAuth';
-import { placeOrder as createOrderApi } from '../api/auth';
 
 const deliveryOptions = [
   { id: 'standard', name: 'Standard delivery', detail: '4–7 business days · TradeSphere Verified Logistics', price: 45 },
@@ -13,7 +12,7 @@ const deliveryOptions = [
 ];
 
 const Checkout = () => {
-  const { items, subtotal, clearCart } = useCart();
+  const { items, subtotal } = useCart();
   const { user } = useAuth();
   const accountName = user?.fullName || user?.name || user?.email || 'Account';
   const [shippingAddress, setShippingAddress] = useState('12 Mushin Road, Isolo, Lagos, Lagos State');
@@ -23,7 +22,6 @@ const Checkout = () => {
   const [promoStatus, setPromoStatus] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
-  const navigate = useNavigate();
 
   const deliveryPrice = deliveryOptions.find((option) => option.id === delivery)?.price || 45;
   const tax = subtotal * 0.05;
@@ -59,7 +57,7 @@ const Checkout = () => {
     setSubmitting(true);
 
     try {
-      const savedOrder = await createOrderApi({
+      const pendingOrderPayload = {
         buyerId: user?.id,
         buyerName: accountName,
         shippingAddress,
@@ -70,13 +68,31 @@ const Checkout = () => {
           productId: item.id,
           quantity: item.quantity,
         })),
+      };
+
+      sessionStorage.setItem('pendingOrder', JSON.stringify(pendingOrderPayload));
+
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+      const res = await fetch(`${apiUrl}/api/v1/payments/initialize`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          email: user?.email || 'customer@tradesphere.com',
+          amount: total,
+          callbackUrl: `${window.location.origin}/payment-success`,
+        }),
       });
 
-      navigate('/orders/confirmation', { state: { order: savedOrder } });
-      clearCart();
+      const data = await res.json();
+
+      if (data.status && data.data?.authorization_url) {
+        window.location.href = data.data.authorization_url;
+      } else {
+        throw new Error(data.message || 'Unable to initialize Paystack payment.');
+      }
     } catch (error) {
-      setErrorMsg(error.message || 'Unable to place your order. Please check stock availability and try again.');
-    } finally {
+      setErrorMsg(error.message || 'Unable to start payment. Please try again.');
       setSubmitting(false);
     }
   };
@@ -168,8 +184,8 @@ const Checkout = () => {
               <h2 className="text-lg font-bold text-slate-900">Payment method</h2>
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
                 {[
-                  ['card', 'Credit or debit card', 'Visa, Mastercard'],
-                  ['bank', 'Bank transfer', 'Secure bank payment'],
+                  ['card', 'Credit or debit card', 'Paystack Card Checkout'],
+                  ['bank', 'Bank transfer', 'Paystack Bank Transfer'],
                 ].map(([value, title, detail]) => (
                   <label key={value} className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 ${payment === value ? 'border-green-700 bg-green-50/60' : 'border-slate-200'}`}>
                     <input type="radio" name="payment" value={value} checked={payment === value} onChange={() => setPayment(value)} className="mt-1 accent-green-700" />
@@ -221,7 +237,7 @@ const Checkout = () => {
             </div>
             {promoStatus && <p role="status" className={`mt-2 text-xs ${promoStatus.valid ? 'text-green-700' : 'text-red-600'}`}>{promoStatus.text}</p>}
             <button type="submit" disabled={submitting} className="mt-4 w-full rounded-xl bg-green-700 px-4 py-3.5 font-bold text-white transition hover:bg-green-800 disabled:opacity-60">
-              {submitting ? 'Placing order…' : 'Place secure order'}
+              {submitting ? 'Redirecting to Paystack…' : 'Pay with Paystack'}
             </button>
             <div className="mt-4 rounded-xl border border-green-200 bg-green-50 p-4">
               <p className="flex items-center gap-2 text-sm font-bold text-green-900">

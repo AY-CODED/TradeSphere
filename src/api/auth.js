@@ -125,6 +125,13 @@ export const getBuyerOrders = (buyerId) => request(`/orders/buyer/${buyerId}`);
 export const getVendorOrders = (vendorId) => request(`/orders/vendor/${vendorId}`);
 
 // --- Payments API ---
+export const initializePayment = (paymentData) => request('/payments/initialize', {
+  method: 'POST',
+  body: paymentData,
+});
+
+export const verifyPayment = (reference) => request(`/payments/verify/${reference}`);
+
 export const getMyPayments = () => request('/payments/me');
 
 export const getVendorPayments = (vendorId) => request(`/payments/vendor/${vendorId}`);

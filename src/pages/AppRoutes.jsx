@@ -11,6 +11,7 @@ import Home from "./Home";
 import Marketplace from "./Marketplace";
 import OrderConfirmation from "./OrderConfirmation";
 import OrderReview from "./OrderReview";
+import PaymentSuccess from "./PaymentSuccess";
 import ProductDetails from "./ProductDetails";
 import SignIn from "./SignIn";
 import SignUp from "./SignUp";
@@ -53,6 +54,7 @@ const AppRoutes = () => {
         <Route path="cart" element={<Cart />} />
         <Route element={<RequireAuth />}>
           <Route path="checkout" element={<Checkout />} />
+          <Route path="payment-success" element={<PaymentSuccess />} />
           <Route path="orders/confirmation" element={<OrderConfirmation />} />
           <Route path="orders/review" element={<OrderReview />} />
           <Route path="account/verification" element={<BusinessVerification />} />
