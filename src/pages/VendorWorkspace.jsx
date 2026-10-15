@@ -1,5 +1,5 @@
 // src/pages/VendorWorkspace.jsx
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ArrowRight,
   BarChart3,
@@ -9,7 +9,8 @@ import {
   Check,
   ChevronRight,
   CircleHelp,
-  ClipboardList,
+  History,
+  ImagePlus,
   LayoutDashboard,
   Package,
   Plus,
@@ -71,6 +72,11 @@ const sectionEmptyStates = {
     title: 'Payout activity will appear here',
     description: 'Review your available balance and payout history as orders are completed.',
   },
+  Activity: {
+    icon: History,
+    title: 'No activity yet',
+    description: 'Workspace activity will appear here as you move between sections and manage your catalogue.',
+  },
   Settings: {
     icon: Settings2,
     title: 'Business settings',
@@ -91,9 +97,21 @@ const initialProductForm = {
 const VendorWorkspace = () => {
   const [activeSection, setActiveSection] = useState('Overview');
   const [productFormOpen, setProductFormOpen] = useState(false);
-  const [productNotice, setProductNotice] = useState('');
+  const [products, setProducts] = useState([]);
+  const [orders, setOrders] = useState([]);
+  const [vendorActivity, setVendorActivity] = useState([]);
+  const [formValues, setFormValues] = useState(initialProductForm);
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState('');
+  const [productError, setProductError] = useState('');
+  const [productSuccess, setProductSuccess] = useState('');
+  const [dataError, setDataError] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
   const { user } = useAuth();
   const vendorId = user?.id;
+  const workspaceLoading = Boolean(vendorId) && isLoading;
   const vendorName = user?.businessName || user?.fullName || user?.name || user?.email || 'Your business';
   const initials = vendorName
     .split(/[\s@.]+/)
@@ -103,23 +121,34 @@ const VendorWorkspace = () => {
     .join('')
     .toUpperCase();
 
-  const loadVendorData = useCallback(async () => {
-    if (!vendorId) return;
-    try {
-      const [fetchedProducts, fetchedOrders] = await Promise.all([
-        getVendorProducts(vendorId).catch(() => []),
-        getVendorOrders(vendorId).catch(() => []),
-      ]);
-      setProducts(Array.isArray(fetchedProducts) ? fetchedProducts : []);
-      setOrders(Array.isArray(fetchedOrders) ? fetchedOrders : []);
-    } catch {
-      // ignore
-    }
-  }, [vendorId]);
+  useEffect(() => {
+    if (!vendorId) return undefined;
+    let active = true;
+    Promise.all([getVendorProducts(vendorId), getVendorOrders(vendorId)])
+      .then(([fetchedProducts, fetchedOrders]) => {
+        if (!active) return;
+        setProducts(Array.isArray(fetchedProducts) ? fetchedProducts : []);
+        setOrders(Array.isArray(fetchedOrders) ? fetchedOrders : []);
+        setDataError('');
+      })
+      .catch((error) => {
+        if (active) {
+          setDataError(error instanceof Error ? error.message : 'Unable to load vendor workspace data.');
+        }
+      })
+      .finally(() => {
+        if (active) setIsLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [vendorId, refreshKey]);
 
   useEffect(() => {
-    loadVendorData();
-  }, [loadVendorData]);
+    return () => {
+      if (imagePreview) URL.revokeObjectURL(imagePreview);
+    };
+  }, [imagePreview]);
 
   const grossSales = useMemo(() => {
     return orders.reduce((sum, order) => {
@@ -166,6 +195,9 @@ const VendorWorkspace = () => {
 
   const openProductForm = () => {
     setProductError('');
+    setFormValues(initialProductForm);
+    setImageFile(null);
+    setImagePreview('');
     setProductFormOpen(true);
   };
 
@@ -176,6 +208,17 @@ const VendorWorkspace = () => {
   const handleImageSelection = (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      setProductError('Choose a valid image file.');
+      event.target.value = '';
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setProductError('The image must be 10MB or smaller.');
+      event.target.value = '';
+      return;
+    }
+    setProductError('');
     setImageFile(file);
     setImagePreview(URL.createObjectURL(file));
   };
@@ -188,7 +231,49 @@ const VendorWorkspace = () => {
 
   const submitProductForm = async (event) => {
     event.preventDefault();
-    setProductNotice('Your vendor product service is not connected yet. Nothing was saved.');
+    if (!vendorId) {
+      setProductError('Your vendor account could not be identified. Please sign in again.');
+      return;
+    }
+
+    const price = Number(formValues.price);
+    const stock = Number(formValues.quantity);
+    if (!Number.isFinite(price) || price < 0 || !Number.isInteger(stock) || stock < 0) {
+      setProductError('Enter a valid non-negative price and whole-number quantity.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setProductError('');
+    try {
+      const imageUrl = imageFile
+        ? await uploadImageToCloudinary(imageFile)
+        : formValues.imageUrl.trim();
+      await createProduct({
+        name: formValues.productName.trim(),
+        category: formValues.category.trim(),
+        sku: formValues.sku.trim(),
+        price,
+        stock,
+        description: formValues.description.trim(),
+        imageUrl,
+        vendorId,
+      });
+      setProductFormOpen(false);
+      setProductSuccess('Product added to your catalogue.');
+      setVendorActivity((current) => [{
+        id: `PRODUCT-${Date.now()}`,
+        action: 'Added a product',
+        detail: `Added ${formValues.productName.trim()} to the catalogue.`,
+        time: new Date().toLocaleString(),
+      }, ...current]);
+      setIsLoading(true);
+      setRefreshKey((current) => current + 1);
+    } catch (error) {
+      setProductError(error instanceof Error ? error.message : 'Unable to save this product. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const selectSection = (section) => {
@@ -305,6 +390,14 @@ const VendorWorkspace = () => {
               </button>
             </div>
           )}
+          {dataError && (
+            <p role="alert" className="mb-6 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-800">
+              {dataError}
+            </p>
+          )}
+          {workspaceLoading && (
+            <p role="status" className="mb-6 text-sm text-slate-500">Loading your vendor workspace…</p>
+          )}
 
           <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
             <div>
@@ -328,12 +421,6 @@ const VendorWorkspace = () => {
               )}
             </div>
           </div>
-
-          {productNotice && (
-            <p role="status" aria-live="polite" className="mt-5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900">
-              {productNotice}
-            </p>
-          )}
 
           {activeSection === 'Overview' ? (
             <>
@@ -384,14 +471,14 @@ const VendorWorkspace = () => {
                         <div key={product.id} className="flex items-center justify-between gap-4 py-3.5">
                           <div className="flex items-center gap-3">
                             {product.imageUrl ? (
-                              <img src={product.imageUrl} alt={product.name} className="h-12 w-12 rounded-lg object-cover border border-slate-200" />
+                              <img src={product.imageUrl} alt={product.name || product.productName || 'Product'} className="h-12 w-12 rounded-lg border border-slate-200 object-cover" />
                             ) : (
                               <span className="grid h-12 w-12 place-items-center rounded-lg bg-emerald-50 text-emerald-800">
                                 <Package className="h-5 w-5" />
                               </span>
                             )}
                             <div>
-                              <p className="text-sm font-bold text-slate-900">{product.name}</p>
+                              <p className="text-sm font-bold text-slate-900">{product.name || product.productName}</p>
                               <p className="mt-0.5 text-xs text-slate-500">
                                 {product.category || 'General'} {product.sku ? `· SKU: ${product.sku}` : ''}
                               </p>
@@ -470,14 +557,14 @@ const VendorWorkspace = () => {
                         <td className="py-4 pr-4">
                           <div className="flex items-center gap-3">
                             {product.imageUrl ? (
-                              <img src={product.imageUrl} alt={product.name} className="h-11 w-11 shrink-0 rounded-lg object-cover border border-slate-200" />
+                              <img src={product.imageUrl} alt={product.name || product.productName || 'Product'} className="h-11 w-11 shrink-0 rounded-lg border border-slate-200 object-cover" />
                             ) : (
                               <span className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-emerald-50 text-emerald-800">
                                 <Package className="h-5 w-5" />
                               </span>
                             )}
                             <div>
-                              <p className="font-bold text-slate-900">{product.name}</p>
+                              <p className="font-bold text-slate-900">{product.name || product.productName}</p>
                               {product.description && <p className="mt-0.5 line-clamp-1 text-xs text-slate-500">{product.description}</p>}
                             </div>
                           </div>
@@ -508,7 +595,7 @@ const VendorWorkspace = () => {
                     <div>
                       <p className="font-bold text-slate-900">Order #{order.id}</p>
                       <p className="mt-1 text-xs text-slate-500">
-                        {(order.items || []).map((i) => `${i.productName} (x${i.quantity})`).join(', ')}
+                        {(order.items || []).map((i) => `${i.productName || i.name} (x${i.quantity})`).join(', ')}
                       </p>
                     </div>
                     <div className="flex items-center gap-4">
@@ -520,17 +607,21 @@ const VendorWorkspace = () => {
                       </p>
                     </div>
                   </div>
-                  <button type="button" onClick={() => selectSection('Orders')} className="inline-flex items-center gap-1 text-sm font-semibold text-emerald-800 hover:underline">
-                    View orders <ArrowRight aria-hidden="true" className="h-4 w-4" />
-                  </button>
-                </div>
-                <div className="mt-5 flex flex-col items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50/70 px-5 py-8 text-center">
-                  <ClipboardList aria-hidden="true" className="h-6 w-6 text-slate-400" />
-                  <p className="mt-2 text-sm font-semibold text-slate-700">No order activity to show</p>
-                  <p className="mt-1 text-xs text-slate-500">New orders will be listed here when available.</p>
-                </div>
+                ))}
+              </div>
               </section>
-            </>
+          ) : activeSection === 'Activity' && vendorActivity.length > 0 ? (
+            <section aria-label="Workspace activity" className="mt-7 divide-y divide-slate-100 rounded-xl border border-slate-200 bg-white px-5 sm:px-6">
+              {vendorActivity.map((activity) => (
+                <article key={activity.id} className="flex flex-wrap items-start justify-between gap-3 py-4">
+                  <div>
+                    <p className="font-semibold text-slate-900">{activity.action}</p>
+                    <p className="mt-1 text-sm text-slate-500">{activity.detail}</p>
+                  </div>
+                  <time className="text-xs text-slate-500">{activity.time}</time>
+                </article>
+              ))}
+            </section>
           ) : (
             <section className="mt-7 rounded-xl border border-slate-200 bg-white p-5 sm:p-8">
               <div className="mx-auto flex min-h-[340px] max-w-lg flex-col items-center justify-center text-center">
@@ -690,10 +781,7 @@ const VendorWorkspace = () => {
                   className="mt-1.5 w-full resize-y rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-emerald-700"
                 />
               </label>
-              <p className="rounded-lg border border-amber-200 bg-amber-50 px-3.5 py-3 text-xs leading-5 text-amber-900">
-                Product publishing is not connected to a vendor service yet. Submitting this form will not save or publish your product.
-              </p>
-              {productNotice && <p role="alert" aria-live="polite" className="text-sm font-medium text-rose-700">{productNotice}</p>}
+              {productError && <p role="alert" aria-live="polite" className="text-sm font-medium text-rose-700">{productError}</p>}
               <div className="flex flex-col-reverse gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:justify-end">
                 <button
                   type="button"
@@ -702,8 +790,12 @@ const VendorWorkspace = () => {
                 >
                   Cancel
                 </button>
-                <button type="submit" className="h-10 rounded-lg bg-emerald-800 px-4 text-sm font-semibold text-white transition hover:bg-emerald-900">
-                  Preview product details
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="h-10 rounded-lg bg-emerald-800 px-4 text-sm font-semibold text-white transition hover:bg-emerald-900 disabled:cursor-wait disabled:opacity-60"
+                >
+                  {isSubmitting ? 'Publishing…' : 'Publish product'}
                 </button>
               </div>
             </form>
