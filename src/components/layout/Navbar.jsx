@@ -1,11 +1,16 @@
 // src/components/layout/Navbar.jsx
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Bell, Mail, Menu, Moon, Search, ShoppingCart, Sun, X } from 'lucide-react';
+import { Bell, CheckCheck, Mail, Menu, Moon, Search, ShoppingCart, Sun, X } from 'lucide-react';
 import Logo from '../../assets/images/Logo.png';
 import { useCart } from '../../hooks/useCart';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../hooks/useTheme';
+import {
+  getNotifications,
+  markAllNotificationsRead,
+  markNotificationRead,
+} from '../../api/auth';
 import LogoutButton from '../auth/LogoutButton';
 
 const baseNavigation = [
@@ -16,6 +21,10 @@ const baseNavigation = [
 const Navbar = () => {
   const [search, setSearch] = useState('');
   const [isOpen, setIsOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const notifRef = useRef(null);
+
   const { itemCount } = useCart();
   const { theme, toggleTheme } = useTheme();
   const { user } = useAuth();
@@ -32,6 +41,69 @@ const Navbar = () => {
 
   const accountName = user?.fullName || user?.name || user?.email || 'Account';
   const accountInitials = accountName.split(/\s+/).slice(0, 2).map((part) => part[0]).join('').toUpperCase();
+  const unreadCount = notifications.filter((n) => !n.read).length;
+
+  useEffect(() => {
+    if (!user?.id) {
+      setNotifications([]);
+      return undefined;
+    }
+
+    let active = true;
+    const loadNotifications = () => {
+      getNotifications()
+        .then((data) => {
+          if (active && Array.isArray(data)) {
+            setNotifications(data);
+          }
+        })
+        .catch(() => {});
+    };
+
+    loadNotifications();
+    const interval = setInterval(loadNotifications, 15000);
+
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
+  }, [user?.id, location.pathname]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (notifRef.current && !notifRef.current.contains(event.target)) {
+        setNotifOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleNotificationClick = async (notification) => {
+    if (!notification.read) {
+      try {
+        await markNotificationRead(notification.id);
+        setNotifications((prev) =>
+          prev.map((item) => (item.id === notification.id ? { ...item, read: true } : item))
+        );
+      } catch {
+        // ignore
+      }
+    }
+    setNotifOpen(false);
+    if (notification.link) {
+      navigate(notification.link);
+    }
+  };
+
+  const handleMarkAllRead = async () => {
+    try {
+      await markAllNotificationsRead();
+      setNotifications((prev) => prev.map((item) => ({ ...item, read: true })));
+    } catch {
+      // ignore
+    }
+  };
 
   const submitSearch = (event) => {
     event.preventDefault();
@@ -96,9 +168,87 @@ const Navbar = () => {
           >
             {theme === 'light' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
           </button>
-          <button type="button" aria-label="Notifications" className="rounded p-1.5 text-slate-600 transition-colors hover:bg-emerald-50 hover:text-emerald-700">
-            <Bell className="h-4 w-4" />
-          </button>
+
+          {/* Notification Bell & Dropdown */}
+          <div ref={notifRef} className="relative">
+            <button
+              type="button"
+              aria-label="Notifications"
+              onClick={() => setNotifOpen((prev) => !prev)}
+              className="relative rounded p-1.5 text-slate-600 transition-colors hover:bg-emerald-50 hover:text-emerald-700"
+            >
+              <Bell className="h-4 w-4" />
+              {unreadCount > 0 && (
+                <span className="absolute -right-1 -top-1 grid h-3.5 min-w-3.5 place-items-center rounded-full bg-orange-500 px-0.5 text-[9px] font-bold text-white">
+                  {unreadCount}
+                </span>
+              )}
+            </button>
+
+            {notifOpen && (
+              <div className="absolute right-0 mt-2 w-80 sm:w-96 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl z-50">
+                <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/70 px-4 py-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold uppercase tracking-wider text-slate-800">Notifications</span>
+                    {unreadCount > 0 && (
+                      <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
+                        {unreadCount} new
+                      </span>
+                    )}
+                  </div>
+                  {unreadCount > 0 && (
+                    <button
+                      type="button"
+                      onClick={handleMarkAllRead}
+                      className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 hover:underline"
+                    >
+                      <CheckCheck className="h-3.5 w-3.5" />
+                      Mark all read
+                    </button>
+                  )}
+                </div>
+
+                <div className="max-h-80 overflow-y-auto divide-y divide-slate-100">
+                  {!user ? (
+                    <div className="px-4 py-8 text-center text-xs text-slate-500">
+                      Sign in to view your TradeSphere notifications.
+                    </div>
+                  ) : notifications.length === 0 ? (
+                    <div className="px-4 py-8 text-center text-xs text-slate-500">
+                      You have no notifications yet.
+                    </div>
+                  ) : (
+                    notifications.map((item) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => handleNotificationClick(item)}
+                        className={`flex w-full items-start gap-3 px-4 py-3 text-left transition hover:bg-slate-50 ${
+                          item.read ? 'bg-white' : 'bg-emerald-50/40'
+                        }`}
+                      >
+                        <span
+                          className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${
+                            item.read ? 'bg-slate-300' : 'bg-emerald-600'
+                          }`}
+                        />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="truncate text-xs font-bold text-slate-900">{item.title}</p>
+                            <span className="shrink-0 text-[10px] text-slate-400">
+                              {item.createdAt ? new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                            </span>
+                          </div>
+                          <p className="mt-0.5 text-xs leading-relaxed text-slate-600">{item.message}</p>
+                        </div>
+                      </button>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
           {user ? (
             <>
               <Link to="/account" className="flex shrink-0 items-center gap-2 border-l border-slate-300 pl-3 text-xs font-medium text-slate-800">

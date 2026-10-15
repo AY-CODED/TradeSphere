@@ -144,3 +144,14 @@ export const updateDisputeStatus = (disputeId, status) => request(`/disputes/${d
   method: 'PATCH',
   body: { status },
 });
+
+// --- Notifications API ---
+export const getNotifications = () => request('/notifications');
+
+export const markNotificationRead = (id) => request(`/notifications/${id}/read`, {
+  method: 'PATCH',
+});
+
+export const markAllNotificationsRead = () => request('/notifications/read-all', {
+  method: 'PATCH',
+});
