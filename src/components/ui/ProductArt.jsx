@@ -1,22 +1,32 @@
-import { Box, Drill, HardHat, Package, Smartphone, Shield, Hand } from 'lucide-react';
-
-const artIcons = {
-  phone: Smartphone,
-  drill: Drill,
-  boot: Shield,
-  helmet: HardHat,
-  gloves: Hand,
-  package: Package,
-};
+// src/components/ui/ProductArt.jsx
+import { Package } from 'lucide-react';
 
 const ProductArt = ({ product, className = '' }) => {
-  const Icon = artIcons[product.icon] || Box;
+  const imageUrl = product?.imageUrl || product?.image;
+
+  if (imageUrl) {
+    return (
+      <div className={`relative overflow-hidden bg-slate-100 ${className}`}>
+        <img
+          src={imageUrl}
+          alt={product?.name || 'Product image'}
+          loading="lazy"
+          className="h-full w-full object-cover"
+        />
+      </div>
+    );
+  }
 
   return (
-    <div className={`relative flex items-center justify-center overflow-hidden bg-gradient-to-br ${product.tone} ${className}`}>
-      <div className="absolute -right-8 -top-8 h-40 w-40 rounded-full border border-white/20" />
-      <div className="absolute -bottom-14 -left-10 h-48 w-48 rounded-full border border-white/20" />
-      <Icon aria-hidden="true" className="relative z-10 h-24 w-24 text-white/90 drop-shadow-lg sm:h-28 sm:w-28" strokeWidth={1.25} />
+    <div
+      className={`grid place-items-center bg-gradient-to-br from-emerald-50 via-slate-100 to-emerald-100 text-emerald-800 ${className}`}
+    >
+      <div className="flex flex-col items-center p-4 text-center">
+        <Package className="h-10 w-10 opacity-75" />
+        <span className="mt-2 line-clamp-1 text-xs font-bold uppercase tracking-wider text-emerald-900/70">
+          {product?.category || 'TradeSphere'}
+        </span>
+      </div>
     </div>
   );
 };

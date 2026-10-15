@@ -1,10 +1,5 @@
-// Backend endpoints:
-// POST /auth/signup   { fullName, email, password }
-// POST /auth/login    { email, password }
-// POST /auth/logout
-// GET  /auth/me       current user or 401
-
-const API_BASE_URL = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '');
+// src/api/auth.js
+const API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1').replace(/\/+$/, '');
 
 export class AuthApiError extends Error {
   constructor(message, status = null, errors = {}) {
@@ -54,6 +49,7 @@ const request = async (path, { method = 'GET', body } = {}) => {
   return data;
 };
 
+// --- Auth API ---
 export const signUp = (credentials) => request('/auth/signup', {
   method: 'POST',
   body: credentials,
@@ -83,3 +79,59 @@ export const getCurrentUser = async () => {
     throw error;
   }
 };
+
+export const updateProfile = (profileData) => request('/auth/profile', {
+  method: 'PUT',
+  body: profileData,
+});
+
+// --- Catalog / Products API ---
+export const getProducts = () => request('/products');
+
+export const getProductById = (productId) => request(`/products/${productId}`);
+
+export const getVendorProducts = (vendorId) => request(`/products/vendor/${vendorId}`);
+
+export const createProduct = (productData) => request('/products', {
+  method: 'POST',
+  body: productData,
+});
+
+// --- Orders API ---
+export const placeOrder = (orderData) => request('/orders', {
+  method: 'POST',
+  body: orderData,
+});
+
+export const getMyOrders = () => request('/orders/me');
+
+export const getOrderById = (orderId) => request(`/orders/${orderId}`);
+
+export const approveOrderPacking = (orderId) => request(`/orders/${orderId}/approve-packing`, {
+  method: 'POST',
+});
+
+export const getBuyerOrders = (buyerId) => request(`/orders/buyer/${buyerId}`);
+
+export const getVendorOrders = (vendorId) => request(`/orders/vendor/${vendorId}`);
+
+// --- Business Verification (KYC) API ---
+export const getMyVerification = () => request('/verification/me');
+
+export const saveMyVerification = (payload) => request('/verification/me', {
+  method: 'PUT',
+  body: payload,
+});
+
+// --- Disputes API ---
+export const getDisputes = () => request('/disputes');
+
+export const createDispute = (disputeData) => request('/disputes', {
+  method: 'POST',
+  body: disputeData,
+});
+
+export const updateDisputeStatus = (disputeId, status) => request(`/disputes/${disputeId}/status`, {
+  method: 'PATCH',
+  body: { status },
+});

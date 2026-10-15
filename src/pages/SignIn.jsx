@@ -1,3 +1,4 @@
+// src/pages/SignIn.jsx
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import AuthField from '../components/auth/AuthField';
@@ -34,8 +35,9 @@ const SignIn = () => {
 
     setSubmitting(true);
     try {
-      await login({ email: normalizedEmail, password });
-      const destination = location.state?.from || { pathname: '/account' };
+      const signedInUser = await login({ email: normalizedEmail, password });
+      const defaultPath = signedInUser?.role === 'VENDOR' ? '/vendor-workspace' : '/account';
+      const destination = location.state?.from || { pathname: defaultPath };
       navigate(destination, { replace: true });
     } catch (error) {
       setErrors((current) => ({
