@@ -1,3 +1,4 @@
+// src/pages/SignUp.jsx
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import AuthField from '../components/auth/AuthField';
@@ -7,7 +8,14 @@ import { useAuth } from '../hooks/useAuth';
 import { normalizeEmail, validateEmail, validatePassword } from '../utils/authValidation';
 
 const SignUp = () => {
-  const [values, setValues] = useState({ fullName: '', email: '', password: '', confirmPassword: '' });
+  const [values, setValues] = useState({
+    fullName: '',
+    email: '',
+    phoneNumber: '',
+    password: '',
+    confirmPassword: '',
+    role: 'BUYER',
+  });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState({});
@@ -42,10 +50,13 @@ const SignUp = () => {
       const result = await signup({
         fullName: values.fullName.trim(),
         email: normalizedEmail,
+        phoneNumber: values.phoneNumber.trim(),
         password: values.password,
+        role: values.role,
       });
       if (result.user) {
-        navigate('/account', { replace: true });
+        const destination = result.user.role === 'VENDOR' ? '/vendor-workspace' : '/account';
+        navigate(destination, { replace: true });
       } else {
         navigate('/signin', {
           replace: true,
@@ -71,6 +82,30 @@ const SignUp = () => {
         </div>
       )}
       <form onSubmit={submit} noValidate className="space-y-4">
+        <div>
+          <span className="block text-xs font-bold uppercase tracking-wide text-slate-600">Account type</span>
+          <div className="mt-2 grid grid-cols-2 gap-3">
+            {[
+              { id: 'BUYER', title: 'Buyer', subtitle: 'Shop & place orders' },
+              { id: 'VENDOR', title: 'Seller (Vendor)', subtitle: 'List & sell products' },
+            ].map((option) => (
+              <button
+                key={option.id}
+                type="button"
+                onClick={() => setValues((current) => ({ ...current, role: option.id }))}
+                className={`rounded-xl border p-3 text-left transition ${
+                  values.role === option.id
+                    ? 'border-emerald-700 bg-emerald-50 text-emerald-950 ring-2 ring-emerald-700/20'
+                    : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                }`}
+              >
+                <p className="text-sm font-bold">{option.title}</p>
+                <p className="mt-0.5 text-xs text-slate-500">{option.subtitle}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+
         <AuthField
           id="fullName"
           label="Full name"
@@ -90,6 +125,17 @@ const SignUp = () => {
           inputMode="email"
           placeholder="you@company.com"
           error={errors.email}
+        />
+        <AuthField
+          id="phoneNumber"
+          label="Phone number"
+          type="tel"
+          value={values.phoneNumber}
+          onChange={updateValue('phoneNumber')}
+          autoComplete="tel"
+          inputMode="tel"
+          placeholder="+234 800 000 0000"
+          error={errors.phoneNumber}
         />
         <AuthField
           id="password"
@@ -118,7 +164,7 @@ const SignUp = () => {
           disabled={submitting}
           className="mt-2 inline-flex h-12 w-full items-center justify-center rounded-xl bg-emerald-800 px-5 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {submitting ? 'Creating account…' : 'Create account'}
+          {submitting ? 'Creating account…' : `Create ${values.role === 'VENDOR' ? 'Seller' : 'Buyer'} account`}
         </button>
       </form>
       <p className="mt-6 text-center text-sm text-slate-600">

@@ -1,3 +1,4 @@
+// src/components/layout/Navbar.jsx
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Bell, Mail, Menu, Moon, Search, ShoppingCart, Sun, X } from 'lucide-react';
@@ -7,10 +8,9 @@ import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../hooks/useTheme';
 import LogoutButton from '../auth/LogoutButton';
 
-const navigation = [
+const baseNavigation = [
   { label: 'Marketplace', to: '/marketplace', active: (pathname) => pathname.startsWith('/marketplace') || pathname.startsWith('/products/') },
   { label: 'Logistics', to: '/account?section=My%20orders', active: (pathname) => pathname.startsWith('/orders') },
-  { label: 'Vendor workspace', to: '/vendor-workspace', active: (pathname) => pathname.startsWith('/vendor-workspace') },
 ];
 
 const Navbar = () => {
@@ -21,6 +21,15 @@ const Navbar = () => {
   const { user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+
+  const isVendor = user?.role === 'VENDOR' || user?.role === 'ADMIN';
+  const navigation = isVendor
+    ? [
+        ...baseNavigation,
+        { label: 'Vendor workspace', to: '/vendor-workspace', active: (pathname) => pathname.startsWith('/vendor-workspace') },
+      ]
+    : baseNavigation;
+
   const accountName = user?.fullName || user?.name || user?.email || 'Account';
   const accountInitials = accountName.split(/\s+/).slice(0, 2).map((part) => part[0]).join('').toUpperCase();
 
