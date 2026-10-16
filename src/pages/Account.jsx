@@ -186,7 +186,7 @@ const Account = () => {
                 Open Vendor Workspace
               </Link>
             )}
-            <button
+            {/* <button
               type="button"
               disabled={saving}
               onClick={toggleSellerRole}
@@ -194,7 +194,7 @@ const Account = () => {
             >
               <Store className="h-4 w-4" />
               {isVendor ? 'Switch to Buyer' : 'Become a Seller'}
-            </button>
+            </button> */}
             <button
               type="button"
               onClick={() => {
@@ -313,7 +313,7 @@ const Account = () => {
                           required
                           value={formValues.email}
                           onChange={(e) => setFormValues((prev) => ({ ...prev, email: e.target.value }))}
-                          placeholder="you@company.com"
+                          placeholder="JohnDoe@gmail.com"
                           className="mt-1.5 w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-green-600"
                         />
                       </label>
