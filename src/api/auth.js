@@ -124,13 +124,15 @@ export const getBuyerOrders = (buyerId) => request(`/orders/buyer/${buyerId}`);
 
 export const getVendorOrders = (vendorId) => request(`/orders/vendor/${vendorId}`);
 
-// --- Payments API ---
+// --- Payments & NUBAN Resolution API ---
 export const initializePayment = (paymentData) => request('/payments/initialize', {
   method: 'POST',
   body: paymentData,
 });
 
 export const verifyPayment = (reference) => request(`/payments/verify/${reference}`);
+
+export const resolveAccountNumber = (accountNumber, bankCode) => request(`/payments/resolve-account?accountNumber=${accountNumber}&bankCode=${bankCode}`);
 
 export const recordPayment = (paymentData) => request('/payments/record', {
   method: 'POST',

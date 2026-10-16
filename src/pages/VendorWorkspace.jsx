@@ -1,4 +1,4 @@
-// src/pages/VendorWorkspace.jsx (With 85%/15% Commission Split & Nigerian Bank Selector)
+// src/pages/VendorWorkspace.jsx (With 85%/15% Commission Split, Nigerian Bank Selector & Auto-Resolve NUBAN)
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowRight,
@@ -39,6 +39,7 @@ import {
   getVendorProducts,
   markAllNotificationsRead,
   markNotificationRead,
+  resolveAccountNumber,
   updateProduct as updateProductApi,
   withdrawVendorFunds,
 } from '../api/auth';
@@ -170,6 +171,7 @@ const VendorWorkspace = () => {
   const [withdrawModalOpen, setWithdrawModalOpen] = useState(false);
   const [withdrawForm, setWithdrawForm] = useState(initialWithdrawForm);
   const [isWithdrawing, setIsWithdrawing] = useState(false);
+  const [isResolvingAccount, setIsResolvingAccount] = useState(false);
   const [withdrawError, setWithdrawError] = useState('');
 
   const { user } = useAuth();
@@ -473,7 +475,7 @@ const VendorWorkspace = () => {
       bankCode: NIGERIAN_BANKS[7].code, // Default GTBank (058)
       bankName: NIGERIAN_BANKS[7].name,
       accountNumber: '',
-      accountName: vendorName,
+      accountName: '',
     });
     setWithdrawModalOpen(true);
   };
@@ -486,6 +488,29 @@ const VendorWorkspace = () => {
       bankCode: selectedCode,
       bankName: bankObj ? bankObj.name : '',
     }));
+  };
+
+  const handleAccountNumberChange = async (event) => {
+    const accNum = event.target.value.replace(/\D/g, '').slice(0, 10);
+    setWithdrawForm((prev) => ({ ...prev, accountNumber: accNum }));
+
+    if (accNum.length === 10 && withdrawForm.bankCode) {
+      setIsResolvingAccount(true);
+      setWithdrawError('');
+      try {
+        const res = await resolveAccountNumber(accNum, withdrawForm.bankCode);
+        const resolvedName = res?.data?.account_name;
+        if (resolvedName) {
+          setWithdrawForm((prev) => ({ ...prev, accountName: resolvedName }));
+        } else {
+          setWithdrawError('Could not verify account number automatically.');
+        }
+      } catch (err) {
+        setWithdrawError('Account resolution failed. Please check the account number and bank.');
+      } finally {
+        setIsResolvingAccount(false);
+      }
+    }
   };
 
   const handleWithdrawSubmit = async (event) => {
@@ -1311,20 +1336,20 @@ const VendorWorkspace = () => {
                   required
                   maxLength={10}
                   value={withdrawForm.accountNumber}
-                  onChange={(e) => setWithdrawForm((prev) => ({ ...prev, accountNumber: e.target.value.replace(/\D/g, '') }))}
+                  onChange={handleAccountNumberChange}
                   placeholder="0123456789"
                   className="mt-1.5 h-11 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-emerald-700"
                 />
               </label>
 
               <label className="block text-sm font-semibold text-slate-700">
-                Account holder name
+                Account holder name {isResolvingAccount && <span className="text-xs font-normal text-emerald-700">(Resolving...)</span>}
                 <input
                   required
+                  readOnly
                   value={withdrawForm.accountName}
-                  onChange={(e) => setWithdrawForm((prev) => ({ ...prev, accountName: e.target.value }))}
-                  placeholder="Your registered account name"
-                  className="mt-1.5 h-11 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-emerald-700"
+                  placeholder="Auto-filled via Paystack NUBAN lookup"
+                  className="mt-1.5 h-11 w-full rounded-lg border border-slate-300 bg-slate-50 px-3 text-sm font-medium text-slate-900 outline-none"
                 />
               </label>
 
@@ -1344,7 +1369,7 @@ const VendorWorkspace = () => {
                 </button>
                 <button
                   type="submit"
-                  disabled={isWithdrawing}
+                  disabled={isWithdrawing || !withdrawForm.accountName}
                   className="h-10 rounded-lg bg-emerald-800 px-4 text-sm font-semibold text-white transition hover:bg-emerald-900 disabled:opacity-60"
                 >
                   {isWithdrawing
