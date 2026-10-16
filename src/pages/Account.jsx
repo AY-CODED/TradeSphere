@@ -186,7 +186,7 @@ const Account = () => {
                 Open Vendor Workspace
               </Link>
             )}
-            {/* <button
+            <button
               type="button"
               disabled={saving}
               onClick={toggleSellerRole}
@@ -194,7 +194,7 @@ const Account = () => {
             >
               <Store className="h-4 w-4" />
               {isVendor ? 'Switch to Buyer' : 'Become a Seller'}
-            </button> */}
+            </button>
             <button
               type="button"
               onClick={() => {
