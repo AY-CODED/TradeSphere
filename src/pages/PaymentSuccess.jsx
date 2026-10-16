@@ -1,7 +1,7 @@
 // src/pages/PaymentSuccess.jsx
 import { useEffect, useState, useRef } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { placeOrder as createOrderApi, verifyPayment } from "../api/auth";
+import { placeOrder as createOrderApi, verifyPayment, recordPayment } from "../api/auth";
 import { useCart } from "../hooks/useCart";
 
 export default function PaymentSuccess() {
@@ -30,6 +30,21 @@ export default function PaymentSuccess() {
           if (pendingOrderRaw) {
             const orderPayload = JSON.parse(pendingOrderRaw);
             const savedOrder = await createOrderApi(orderPayload);
+
+            const vendorIds = Array.from(
+              new Set((savedOrder?.items || []).map((i) => i.vendorId).filter(Boolean))
+            );
+
+            await recordPayment({
+              orderId: savedOrder.id,
+              buyerId: savedOrder.buyerId || orderPayload.buyerId,
+              buyerName: savedOrder.buyerName || orderPayload.buyerName,
+              vendorIds,
+              amount: savedOrder.totalAmount || (data.data.amount / 100),
+              paymentMethod: orderPayload.paymentMethod || "card",
+              transactionReference: reference,
+            }).catch(() => {});
+
             sessionStorage.removeItem("pendingOrder");
             clearCart();
             navigate("/orders/confirmation", { state: { order: savedOrder }, replace: true });

@@ -132,6 +132,11 @@ export const initializePayment = (paymentData) => request('/payments/initialize'
 
 export const verifyPayment = (reference) => request(`/payments/verify/${reference}`);
 
+export const recordPayment = (paymentData) => request('/payments/record', {
+  method: 'POST',
+  body: paymentData,
+});
+
 export const getMyPayments = () => request('/payments/me');
 
 export const getVendorPayments = (vendorId) => request(`/payments/vendor/${vendorId}`);
@@ -140,6 +145,11 @@ export const getPaymentByOrder = (orderId) => request(`/payments/order/${orderId
 
 export const releaseOrderEscrow = (orderId) => request(`/payments/order/${orderId}/release`, {
   method: 'POST',
+});
+
+export const withdrawVendorFunds = (withdrawalData) => request('/payments/withdraw', {
+  method: 'POST',
+  body: withdrawalData,
 });
 
 // --- Business Verification (KYC) API ---

@@ -1,4 +1,4 @@
-// src/pages/VendorWorkspace.jsx (With Live Notifications & Payouts/Payments Tab)
+// src/pages/VendorWorkspace.jsx (With Live Notifications, Payouts/Payments Tab & Withdrawal Modal)
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowRight,
@@ -12,6 +12,7 @@ import {
   CircleHelp,
   History,
   ImagePlus,
+  Landmark,
   LayoutDashboard,
   Package,
   Pencil,
@@ -39,6 +40,7 @@ import {
   markAllNotificationsRead,
   markNotificationRead,
   updateProduct as updateProductApi,
+  withdrawVendorFunds,
 } from '../api/auth';
 import { uploadImageToCloudinary } from '../utils/cloudinary';
 import { formatPrice } from '../utils/formatPrice';
@@ -108,6 +110,12 @@ const initialProductForm = {
   imageUrl: '',
 };
 
+const initialWithdrawForm = {
+  bankName: '',
+  accountNumber: '',
+  accountName: '',
+};
+
 const VendorWorkspace = () => {
   const [activeSection, setActiveSection] = useState('Overview');
   const [productFormOpen, setProductFormOpen] = useState(false);
@@ -130,6 +138,12 @@ const VendorWorkspace = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+
+  // Withdrawal Modal State
+  const [withdrawModalOpen, setWithdrawModalOpen] = useState(false);
+  const [withdrawForm, setWithdrawForm] = useState(initialWithdrawForm);
+  const [isWithdrawing, setIsWithdrawing] = useState(false);
+  const [withdrawError, setWithdrawError] = useState('');
 
   const { user } = useAuth();
   const vendorId = user?.id;
@@ -216,6 +230,14 @@ const VendorWorkspace = () => {
     () =>
       payments
         .filter((p) => p.status === 'RELEASED')
+        .reduce((sum, p) => sum + Number(p.amount || 0), 0),
+    [payments]
+  );
+
+  const withdrawnBalance = useMemo(
+    () =>
+      payments
+        .filter((p) => p.status === 'WITHDRAWN')
         .reduce((sum, p) => sum + Number(p.amount || 0), 0),
     [payments]
   );
@@ -413,6 +435,56 @@ const VendorWorkspace = () => {
     }
   };
 
+  const openWithdrawModal = () => {
+    setWithdrawError('');
+    setWithdrawForm({
+      bankName: '',
+      accountNumber: '',
+      accountName: vendorName,
+    });
+    setWithdrawModalOpen(true);
+  };
+
+  const handleWithdrawSubmit = async (event) => {
+    event.preventDefault();
+    if (!vendorId) return;
+
+    if (withdrawForm.accountNumber.trim().length < 10) {
+      setWithdrawError('Please enter a valid 10-digit bank account number.');
+      return;
+    }
+
+    setIsWithdrawing(true);
+    setWithdrawError('');
+    try {
+      const result = await withdrawVendorFunds({
+        vendorId,
+        bankName: withdrawForm.bankName.trim(),
+        accountNumber: withdrawForm.accountNumber.trim(),
+        accountName: withdrawForm.accountName.trim(),
+      });
+
+      setPayments((prev) =>
+        prev.map((p) => (p.status === 'RELEASED' ? { ...p, status: 'WITHDRAWN' } : p))
+      );
+      setProductSuccess(result?.message || 'Withdrawal processed successfully to your bank account.');
+      setVendorActivity((current) => [
+        {
+          id: `WITHDRAW-${Date.now()}`,
+          action: 'Withdrew released payouts',
+          detail: `Transferred available funds to ${withdrawForm.bankName} (${withdrawForm.accountNumber}).`,
+          time: new Date().toLocaleString(),
+        },
+        ...current,
+      ]);
+      setWithdrawModalOpen(false);
+    } catch (error) {
+      setWithdrawError(error instanceof Error ? error.message : 'Unable to process withdrawal.');
+    } finally {
+      setIsWithdrawing(false);
+    }
+  };
+
   const selectSection = (section) => {
     if (section !== activeSection) {
       setVendorActivity((current) => [
@@ -596,6 +668,17 @@ const VendorWorkspace = () => {
                 >
                   <Plus aria-hidden="true" className="h-4 w-4" />
                   Add product
+                </button>
+              )}
+              {activeSection === 'Payouts' && (
+                <button
+                  type="button"
+                  disabled={releasedBalance <= 0}
+                  onClick={openWithdrawModal}
+                  className="inline-flex h-10 items-center gap-2 rounded-lg bg-emerald-800 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-900 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <Landmark aria-hidden="true" className="h-4 w-4" />
+                  Withdraw available funds
                 </button>
               )}
             </div>
@@ -809,13 +892,24 @@ const VendorWorkspace = () => {
             </section>
           ) : activeSection === 'Payouts' && payments.length > 0 ? (
             <section className="mt-7 space-y-5">
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-4 sm:grid-cols-3">
                 <article className="rounded-xl border border-slate-200 bg-white p-5">
-                  <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Available / Released Payouts</p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Available to Withdraw</p>
+                  </div>
                   <p className="mt-2 text-3xl font-bold text-emerald-700">
                     {formatPrice ? formatPrice(releasedBalance) : `$${releasedBalance.toFixed(2)}`}
                   </p>
                   <p className="mt-1 text-xs text-slate-500">Released after buyer packing approval</p>
+                  <button
+                    type="button"
+                    disabled={releasedBalance <= 0}
+                    onClick={openWithdrawModal}
+                    className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-800 px-4 py-2 text-xs font-bold text-white transition hover:bg-emerald-900 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <Landmark className="h-3.5 w-3.5" />
+                    Withdraw to bank
+                  </button>
                 </article>
                 <article className="rounded-xl border border-slate-200 bg-white p-5">
                   <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Pending in Escrow</p>
@@ -823,6 +917,13 @@ const VendorWorkspace = () => {
                     {formatPrice ? formatPrice(escrowBalance) : `$${escrowBalance.toFixed(2)}`}
                   </p>
                   <p className="mt-1 text-xs text-slate-500">Protected until buyer approves packing proof</p>
+                </article>
+                <article className="rounded-xl border border-slate-200 bg-white p-5">
+                  <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Total Withdrawn</p>
+                  <p className="mt-2 text-3xl font-bold text-slate-900">
+                    {formatPrice ? formatPrice(withdrawnBalance) : `$${withdrawnBalance.toFixed(2)}`}
+                  </p>
+                  <p className="mt-1 text-xs text-slate-500">Successfully paid out to your bank account</p>
                 </article>
               </div>
 
@@ -839,7 +940,9 @@ const VendorWorkspace = () => {
                       </div>
                       <div className="flex items-center gap-4">
                         <span className={`rounded-full px-3 py-1 text-xs font-bold ${
-                          payment.status === 'RELEASED'
+                          payment.status === 'WITHDRAWN'
+                            ? 'bg-slate-100 text-slate-700'
+                            : payment.status === 'RELEASED'
                             ? 'bg-emerald-100 text-emerald-800'
                             : 'bg-amber-100 text-amber-800'
                         }`}>
@@ -1073,6 +1176,100 @@ const VendorWorkspace = () => {
                     : editingProductId
                     ? 'Save changes'
                     : 'Publish product'}
+                </button>
+              </div>
+            </form>
+          </section>
+        </div>
+      )}
+
+      {withdrawModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/40 p-0 backdrop-blur-[2px] sm:items-center sm:p-5"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setWithdrawModalOpen(false);
+          }}
+        >
+          <section role="dialog" aria-modal="true" aria-labelledby="withdraw-modal-title" className="w-full max-w-md rounded-t-2xl bg-white p-5 shadow-2xl sm:rounded-2xl sm:p-7">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.14em] text-emerald-800">Vendor Payout</p>
+                <h2 id="withdraw-modal-title" className="mt-1 text-xl font-bold text-slate-900">
+                  Withdraw Released Funds
+                </h2>
+                <p className="mt-1 text-sm text-slate-500">
+                  Transfer your available balance of{' '}
+                  <strong className="text-emerald-800">
+                    {formatPrice ? formatPrice(releasedBalance) : `$${releasedBalance.toFixed(2)}`}
+                  </strong>{' '}
+                  directly to your bank account.
+                </p>
+              </div>
+              <button
+                type="button"
+                aria-label="Close withdrawal modal"
+                onClick={() => setWithdrawModalOpen(false)}
+                className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-slate-500 hover:bg-slate-100"
+              >
+                <X aria-hidden="true" className="h-4 w-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleWithdrawSubmit} className="mt-6 space-y-4">
+              <label className="block text-sm font-semibold text-slate-700">
+                Bank name
+                <input
+                  required
+                  value={withdrawForm.bankName}
+                  onChange={(e) => setWithdrawForm((prev) => ({ ...prev, bankName: e.target.value }))}
+                  placeholder="e.g. Guaranty Trust Bank (GTBank)"
+                  className="mt-1.5 h-11 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-emerald-700"
+                />
+              </label>
+
+              <label className="block text-sm font-semibold text-slate-700">
+                Account number (10 digits)
+                <input
+                  required
+                  maxLength={10}
+                  value={withdrawForm.accountNumber}
+                  onChange={(e) => setWithdrawForm((prev) => ({ ...prev, accountNumber: e.target.value.replace(/\D/g, '') }))}
+                  placeholder="0123456789"
+                  className="mt-1.5 h-11 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-emerald-700"
+                />
+              </label>
+
+              <label className="block text-sm font-semibold text-slate-700">
+                Account holder name
+                <input
+                  required
+                  value={withdrawForm.accountName}
+                  onChange={(e) => setWithdrawForm((prev) => ({ ...prev, accountName: e.target.value }))}
+                  placeholder="Your registered account name"
+                  className="mt-1.5 h-11 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-emerald-700"
+                />
+              </label>
+
+              {withdrawError && (
+                <p role="alert" className="text-sm font-medium text-rose-700">
+                  {withdrawError}
+                </p>
+              )}
+
+              <div className="flex flex-col-reverse gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  onClick={() => setWithdrawModalOpen(false)}
+                  className="h-10 rounded-lg border border-slate-300 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isWithdrawing}
+                  className="h-10 rounded-lg bg-emerald-800 px-4 text-sm font-semibold text-white transition hover:bg-emerald-900 disabled:opacity-60"
+                >
+                  {isWithdrawing ? 'Processing payout…' : 'Confirm withdrawal'}
                 </button>
               </div>
             </form>
