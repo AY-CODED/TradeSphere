@@ -113,13 +113,13 @@ const Home = () => {
             {[
               { name: 'Electronics', category: 'Electronics', icon: Zap },
               { name: 'Workwear', category: 'Workwear', icon: Briefcase },
-              { name: 'Home & Office', category: 'Logistics Supplies', icon: Laptop },
+              { name: 'Home & Office', category: 'Home & Office', icon: Laptop },
               { name: 'Industrial', category: 'Industrial Tools', icon: Zap },
               { name: 'Global Sourcing', category: 'Logistics Supplies', icon: Globe },
             ].map((cat) => (
               <button
                 key={cat.name}
-                onClick={() => navigate(`/marketplace?category=${encodeURIComponent(cat.category)}`)}
+                onClick={() => navigate(cat.category ? `/marketplace?category=${encodeURIComponent(cat.category)}` : '/marketplace')}
                 type="button"
                 className="flex items-center gap-1.5 md:gap-2 px-3 py-2 md:px-5 md:py-2.5 bg-white/10 backdrop-blur-sm border border-white/20 text-white rounded-md hover:bg-white/20 transition-all text-xs md:text-sm font-medium"
               >
