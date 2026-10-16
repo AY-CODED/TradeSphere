@@ -101,9 +101,3 @@ export const customerProducts = [
     description: 'A practical, adjustable workstation designed for productive commercial and home offices.',
   },
 ];
-
-export const formatPrice = (amount) =>
-  new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-  }).format(amount);
