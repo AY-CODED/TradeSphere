@@ -1,3 +1,4 @@
+@import url('https://fonts.cdnfonts.com/css/amazon-ember');
 @import "tailwindcss";
 
 :root {
@@ -38,6 +39,7 @@
 }
 
 @theme {
+  --font-sans: "Amazon Ember", Arial, sans-serif;
   --color-green-600: var(--brand-600);
   --color-green-700: var(--brand-700);
   --color-green-800: var(--brand-800);
@@ -47,6 +49,9 @@
 
 body {
   min-width: 320px;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   background-color: var(--theme-page);
   color: var(--theme-text-primary);
   transition: background-color 160ms ease, color 160ms ease;
@@ -54,15 +59,7 @@ body {
 
 :is(
   [data-theme='dark'] .bg-white,
-  [data-theme='dark'] .bg-gray-50,
-  [data-theme='dark'] .bg-gray-100,
-  [data-theme='dark'] .bg-slate-50,
-  [data-theme='dark'] .bg-slate-100,
-  [data-theme='dark'] .bg-\[\#f3f6fb\],
-  [data-theme='dark'] .bg-\[\#f6f8fc\],
-  [data-theme='dark'] .bg-\[\#f8f9fc\],
-  [data-theme='dark'] .bg-\[\#f8faff\],
-  [data-theme='dark'] .bg-\[\#f8fafd\]
+  [data-theme='dark'] .bg-\[\#f8faff\]
 ) {
   background-color: var(--theme-surface);
 }
