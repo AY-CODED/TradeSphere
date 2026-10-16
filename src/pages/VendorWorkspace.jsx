@@ -1,4 +1,4 @@
-// src/pages/VendorWorkspace.jsx (With 85%/15% Commission Split, Nigerian Bank Selector & Auto-Resolve NUBAN)
+// src/pages/VendorWorkspace.jsx (With 85%/15% Commission Split, Auto-Resolve NUBAN, Product Video & Order Packing Video Upload)
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowRight,
@@ -10,6 +10,7 @@ import {
   CheckCheck,
   ChevronRight,
   CircleHelp,
+  Film,
   History,
   ImagePlus,
   Landmark,
@@ -23,6 +24,7 @@ import {
   Sparkles,
   Trash2,
   UsersRound,
+  Video,
   Wallet,
   X,
 } from 'lucide-react';
@@ -43,7 +45,7 @@ import {
   updateProduct as updateProductApi,
   withdrawVendorFunds,
 } from '../api/auth';
-import { uploadImageToCloudinary } from '../utils/cloudinary';
+import { uploadImageToCloudinary, uploadVideoToCloudinary } from '../utils/cloudinary';
 import { formatPrice } from '../utils/formatPrice';
 
 const NIGERIAN_BANKS = [
@@ -74,7 +76,7 @@ const NIGERIAN_BANKS = [
 
 const navigation = [
   { label: 'Overview', icon: LayoutDashboard, description: 'Your business at a glance' },
-  { label: 'Orders', icon: ShoppingBag, description: 'Manage incoming orders' },
+  { label: 'Orders', icon: ShoppingBag, description: 'Manage incoming orders and upload packing video proofs' },
   { label: 'Products', icon: Package, description: 'Manage your product catalogue' },
   { label: 'Inventory', icon: Boxes, description: 'Keep stock up to date' },
   { label: 'Analytics', icon: BarChart3, description: 'Understand your performance' },
@@ -135,6 +137,7 @@ const initialProductForm = {
   quantity: '',
   description: '',
   imageUrl: '',
+  videoUrl: '',
 };
 
 const initialWithdrawForm = {
@@ -160,12 +163,22 @@ const VendorWorkspace = () => {
   const [formValues, setFormValues] = useState(initialProductForm);
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState('');
+  const [videoFile, setVideoFile] = useState(null);
+  const [videoPreview, setVideoPreview] = useState('');
   const [productError, setProductError] = useState('');
   const [productSuccess, setProductSuccess] = useState('');
   const [dataError, setDataError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+
+  // Order Packing Video Proof Modal State
+  const [packingModalOrder, setPackingModalOrder] = useState(null);
+  const [packingVideoFile, setPackingVideoFile] = useState(null);
+  const [packingVideoPreview, setPackingVideoPreview] = useState('');
+  const [packingVideoUrl, setPackingVideoUrl] = useState('');
+  const [isUploadingPackingProof, setIsUploadingPackingProof] = useState(false);
+  const [packingProofError, setPackingProofError] = useState('');
 
   // Withdrawal Modal State
   const [withdrawModalOpen, setWithdrawModalOpen] = useState(false);
@@ -235,6 +248,22 @@ const VendorWorkspace = () => {
       }
     };
   }, [imagePreview]);
+
+  useEffect(() => {
+    return () => {
+      if (videoPreview && videoPreview.startsWith('blob:')) {
+        URL.revokeObjectURL(videoPreview);
+      }
+    };
+  }, [videoPreview]);
+
+  useEffect(() => {
+    return () => {
+      if (packingVideoPreview && packingVideoPreview.startsWith('blob:')) {
+        URL.revokeObjectURL(packingVideoPreview);
+      }
+    };
+  }, [packingVideoPreview]);
 
   const grossSales = useMemo(() => {
     return orders.reduce((sum, order) => {
@@ -335,6 +364,8 @@ const VendorWorkspace = () => {
     setFormValues(initialProductForm);
     setImageFile(null);
     setImagePreview('');
+    setVideoFile(null);
+    setVideoPreview('');
     setProductFormOpen(true);
   };
 
@@ -349,9 +380,12 @@ const VendorWorkspace = () => {
       quantity: product.stock !== undefined && product.stock !== null ? String(product.stock) : '0',
       description: product.description || '',
       imageUrl: product.imageUrl || '',
+      videoUrl: product.videoUrl || '',
     });
     setImageFile(null);
     setImagePreview(product.imageUrl || '');
+    setVideoFile(null);
+    setVideoPreview(product.videoUrl || '');
     setProductFormOpen(true);
   };
 
@@ -410,6 +444,30 @@ const VendorWorkspace = () => {
     setFormValues((current) => ({ ...current, imageUrl: '' }));
   };
 
+  const handleVideoSelection = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('video/')) {
+      setProductError('Choose a valid video file (MP4, MOV, WebM).');
+      event.target.value = '';
+      return;
+    }
+    if (file.size > 50 * 1024 * 1024) {
+      setProductError('The video must be 50MB or smaller.');
+      event.target.value = '';
+      return;
+    }
+    setProductError('');
+    setVideoFile(file);
+    setVideoPreview(URL.createObjectURL(file));
+  };
+
+  const clearSelectedVideo = () => {
+    setVideoFile(null);
+    setVideoPreview('');
+    setFormValues((current) => ({ ...current, videoUrl: '' }));
+  };
+
   const submitProductForm = async (event) => {
     event.preventDefault();
     if (!vendorId) {
@@ -431,6 +489,10 @@ const VendorWorkspace = () => {
         ? await uploadImageToCloudinary(imageFile)
         : formValues.imageUrl.trim();
 
+      const videoUrl = videoFile
+        ? await uploadVideoToCloudinary(videoFile)
+        : formValues.videoUrl.trim();
+
       if (editingProductId) {
         const updated = await updateProductApi(editingProductId, {
           name: formValues.productName.trim(),
@@ -440,6 +502,7 @@ const VendorWorkspace = () => {
           stock,
           description: formValues.description.trim(),
           imageUrl,
+          videoUrl,
         });
         setProducts((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
         setProductSuccess(`"${updated.name}" has been updated.`);
@@ -452,6 +515,7 @@ const VendorWorkspace = () => {
           stock,
           description: formValues.description.trim(),
           imageUrl,
+          videoUrl,
           vendorId,
           vendorName,
         });
@@ -469,6 +533,81 @@ const VendorWorkspace = () => {
     }
   };
 
+  // --- Order Packing Video Proof Handlers ---
+  const openPackingModal = (order) => {
+    setPackingProofError('');
+    setPackingVideoFile(null);
+    setPackingVideoPreview(order.packingVideoUrl || '');
+    setPackingVideoUrl(order.packingVideoUrl || '');
+    setPackingModalOrder(order);
+  };
+
+  const handlePackingVideoSelection = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('video/')) {
+      setPackingProofError('Please select a valid video file (MP4, MOV, WebM).');
+      event.target.value = '';
+      return;
+    }
+    if (file.size > 50 * 1024 * 1024) {
+      setPackingProofError('Video must be 50MB or smaller.');
+      event.target.value = '';
+      return;
+    }
+    setPackingProofError('');
+    setPackingVideoFile(file);
+    setPackingVideoPreview(URL.createObjectURL(file));
+  };
+
+  const handlePackingProofSubmit = async (event) => {
+    event.preventDefault();
+    if (!packingModalOrder) return;
+
+    if (!packingVideoFile && !packingVideoUrl.trim()) {
+      setPackingProofError('Please select a video file or paste a video URL.');
+      return;
+    }
+
+    setIsUploadingPackingProof(true);
+    setPackingProofError('');
+    try {
+      const uploadedUrl = packingVideoFile
+        ? await uploadVideoToCloudinary(packingVideoFile)
+        : packingVideoUrl.trim();
+
+      try {
+        localStorage.setItem(`ts_packing_video_${packingModalOrder.id}`, uploadedUrl);
+      } catch {
+        // ignore storage quota errors
+      }
+
+      setOrders((prev) =>
+        prev.map((o) =>
+          o.id === packingModalOrder.id
+            ? { ...o, packingVideoUrl: uploadedUrl, status: o.status === 'PENDING' ? 'PACKED' : o.status }
+            : o
+        )
+      );
+
+      setProductSuccess(`Packing video proof uploaded for Order #${String(packingModalOrder.id).slice(-6).toUpperCase()}.`);
+      setVendorActivity((current) => [
+        {
+          id: `PACKING-VIDEO-${Date.now()}`,
+          action: 'Uploaded order packing video proof',
+          detail: `Attached live Cloudinary video verification for Order #${packingModalOrder.id}.`,
+          time: new Date().toLocaleString(),
+        },
+        ...current,
+      ]);
+      setPackingModalOrder(null);
+    } catch (error) {
+      setPackingProofError(error instanceof Error ? error.message : 'Unable to upload packing video.');
+    } finally {
+      setIsUploadingPackingProof(false);
+    }
+  };
+
   const openWithdrawModal = () => {
     setWithdrawError('');
     setWithdrawForm({
@@ -480,19 +619,40 @@ const VendorWorkspace = () => {
     setWithdrawModalOpen(true);
   };
 
-  const handleBankChange = (event) => {
+  const handleBankChange = async (event) => {
     const selectedCode = event.target.value;
     const bankObj = NIGERIAN_BANKS.find((b) => b.code === selectedCode);
+    const currentAccNum = withdrawForm.accountNumber;
+
     setWithdrawForm((prev) => ({
       ...prev,
       bankCode: selectedCode,
       bankName: bankObj ? bankObj.name : '',
+      accountName: '',
     }));
+
+    if (currentAccNum.length === 10 && selectedCode) {
+      setIsResolvingAccount(true);
+      setWithdrawError('');
+      try {
+        const res = await resolveAccountNumber(currentAccNum, selectedCode);
+        const resolvedName = res?.data?.account_name;
+        if (resolvedName) {
+          setWithdrawForm((prev) => ({ ...prev, accountName: resolvedName }));
+        } else {
+          setWithdrawError('Could not verify account number for this bank.');
+        }
+      } catch {
+        setWithdrawError('Account resolution failed. Please check the account number and bank.');
+      } finally {
+        setIsResolvingAccount(false);
+      }
+    }
   };
 
   const handleAccountNumberChange = async (event) => {
     const accNum = event.target.value.replace(/\D/g, '').slice(0, 10);
-    setWithdrawForm((prev) => ({ ...prev, accountNumber: accNum }));
+    setWithdrawForm((prev) => ({ ...prev, accountNumber: accNum, accountName: accNum.length < 10 ? '' : prev.accountName }));
 
     if (accNum.length === 10 && withdrawForm.bankCode) {
       setIsResolvingAccount(true);
@@ -505,7 +665,7 @@ const VendorWorkspace = () => {
         } else {
           setWithdrawError('Could not verify account number automatically.');
         }
-      } catch (err) {
+      } catch {
         setWithdrawError('Account resolution failed. Please check the account number and bank.');
       } finally {
         setIsResolvingAccount(false);
@@ -812,7 +972,14 @@ const VendorWorkspace = () => {
                               </span>
                             )}
                             <div>
-                              <p className="text-sm font-bold text-slate-900">{product.name || product.productName}</p>
+                              <div className="flex items-center gap-2">
+                                <p className="text-sm font-bold text-slate-900">{product.name || product.productName}</p>
+                                {product.videoUrl && (
+                                  <span className="inline-flex items-center gap-1 rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold text-emerald-800">
+                                    <Video className="h-3 w-3" /> Video
+                                  </span>
+                                )}
+                              </div>
                               <p className="mt-0.5 text-xs text-slate-500">
                                 {product.category || 'General'} {product.sku ? `· SKU: ${product.sku}` : ''}
                               </p>
@@ -918,7 +1085,19 @@ const VendorWorkspace = () => {
                               </span>
                             )}
                             <div>
-                              <p className="font-bold text-slate-900">{product.name || product.productName}</p>
+                              <div className="flex items-center gap-2">
+                                <p className="font-bold text-slate-900">{product.name || product.productName}</p>
+                                {product.videoUrl && (
+                                  <a
+                                    href={product.videoUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="inline-flex items-center gap-1 rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold text-emerald-800 hover:bg-emerald-100"
+                                  >
+                                    <Video className="h-3 w-3" /> Watch video
+                                  </a>
+                                )}
+                              </div>
                               {product.description && <p className="mt-0.5 line-clamp-1 text-xs text-slate-500">{product.description}</p>}
                             </div>
                           </div>
@@ -1043,24 +1222,49 @@ const VendorWorkspace = () => {
           ) : activeSection === 'Orders' && orders.length > 0 ? (
             <section className="mt-7 rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
               <div className="divide-y divide-slate-100">
-                {orders.map((order) => (
-                  <div key={order.id} className="flex flex-wrap items-center justify-between gap-4 py-4">
-                    <div>
-                      <p className="font-bold text-slate-900">Order #{order.id}</p>
-                      <p className="mt-1 text-xs text-slate-500">
-                        {(order.items || []).map((i) => `${i.productName || i.name} (x${i.quantity})`).join(', ')}
-                      </p>
+                {orders.map((order) => {
+                  const savedPackingVideo =
+                    order.packingVideoUrl ||
+                    (typeof window !== 'undefined' ? localStorage.getItem(`ts_packing_video_${order.id}`) : null);
+
+                  return (
+                    <div key={order.id} className="flex flex-wrap items-center justify-between gap-4 py-4">
+                      <div>
+                        <p className="font-bold text-slate-900">Order #{order.id}</p>
+                        <p className="mt-1 text-xs text-slate-500">
+                          {(order.items || []).map((i) => `${i.productName || i.name} (x${i.quantity})`).join(', ')}
+                        </p>
+                        {savedPackingVideo && (
+                          <a
+                            href={savedPackingVideo}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-800 hover:bg-emerald-100"
+                          >
+                            <Video className="h-3.5 w-3.5" />
+                            View uploaded packing video proof
+                          </a>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => openPackingModal({ ...order, packingVideoUrl: savedPackingVideo || '' })}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50/70 px-3 py-1.5 text-xs font-bold text-emerald-900 transition hover:bg-emerald-100"
+                        >
+                          <Film className="h-3.5 w-3.5" />
+                          {savedPackingVideo ? 'Update Packing Video' : 'Upload Packing Video'}
+                        </button>
+                        <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800">
+                          {order.status || 'PAID'}
+                        </span>
+                        <p className="font-bold text-slate-900">
+                          {formatPrice ? formatPrice(Number(order.totalAmount || 0)) : `₦${Number(order.totalAmount || 0).toFixed(2)}`}
+                        </p>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-4">
-                      <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800">
-                        {order.status || 'PAID'}
-                      </span>
-                      <p className="font-bold text-slate-900">
-                        {formatPrice ? formatPrice(Number(order.totalAmount || 0)) : `₦${Number(order.totalAmount || 0).toFixed(2)}`}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </section>
           ) : activeSection === 'Activity' && vendorActivity.length > 0 ? (
@@ -1115,8 +1319,8 @@ const VendorWorkspace = () => {
                 </h2>
                 <p className="mt-1 text-sm text-slate-500">
                   {editingProductId
-                    ? 'Update the product details and stock in your TradeSphere catalogue.'
-                    : 'Upload a product image to Cloudinary and publish to TradeSphere.'}
+                    ? 'Update the product details, image, and video showcase in your TradeSphere catalogue.'
+                    : 'Upload a product image and optional product video to Cloudinary and publish to TradeSphere.'}
                 </p>
               </div>
               <button
@@ -1161,6 +1365,43 @@ const VendorWorkspace = () => {
                   value={formValues.imageUrl}
                   onChange={handleFieldChange('imageUrl')}
                   placeholder="Or paste a direct image URL (optional)"
+                  className="mt-2 h-10 w-full rounded-lg border border-slate-200 px-3 text-xs outline-none focus:border-emerald-700"
+                />
+              </div>
+
+              <div>
+                <span className="block text-sm font-semibold text-slate-700">
+                  Product video / Live verification clip <span className="font-normal text-slate-400">(optional)</span>
+                </span>
+                {videoPreview || formValues.videoUrl ? (
+                  <div className="relative mt-2 overflow-hidden rounded-xl border border-slate-200 bg-slate-950">
+                    <video
+                      src={videoPreview || formValues.videoUrl}
+                      controls
+                      className="h-48 w-full object-contain"
+                    />
+                    <button
+                      type="button"
+                      onClick={clearSelectedVideo}
+                      className="absolute right-3 top-3 rounded-lg bg-slate-900/80 px-3 py-1.5 text-xs font-bold text-white hover:bg-slate-900"
+                    >
+                      Remove video
+                    </button>
+                  </div>
+                ) : (
+                  <label className="mt-2 flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-300 bg-slate-50/60 px-4 py-5 text-center transition hover:border-emerald-700 hover:bg-emerald-50/30">
+                    <Film className="h-6 w-6 text-emerald-800" />
+                    <span className="mt-2 text-xs font-bold text-slate-700">Click to upload a product video to Cloudinary</span>
+                    <span className="mt-0.5 text-[11px] text-slate-500">MP4, MOV, WEBM up to 50MB</span>
+                    <input type="file" accept="video/*" onChange={handleVideoSelection} className="hidden" />
+                  </label>
+                )}
+
+                <input
+                  type="url"
+                  value={formValues.videoUrl}
+                  onChange={handleFieldChange('videoUrl')}
+                  placeholder="Or paste a direct Cloudinary video URL (optional)"
                   className="mt-2 h-10 w-full rounded-lg border border-slate-200 px-3 text-xs outline-none focus:border-emerald-700"
                 />
               </div>
@@ -1255,10 +1496,104 @@ const VendorWorkspace = () => {
                   className="h-10 rounded-lg bg-emerald-800 px-4 text-sm font-semibold text-white transition hover:bg-emerald-900 disabled:cursor-wait disabled:opacity-60"
                 >
                   {isSubmitting
-                    ? 'Saving…'
+                    ? 'Uploading & Saving…'
                     : editingProductId
                     ? 'Save changes'
                     : 'Publish product'}
+                </button>
+              </div>
+            </form>
+          </section>
+        </div>
+      )}
+
+      {packingModalOrder && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/40 p-0 backdrop-blur-[2px] sm:items-center sm:p-5"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setPackingModalOrder(null);
+          }}
+        >
+          <section role="dialog" aria-modal="true" aria-labelledby="packing-modal-title" className="w-full max-w-md rounded-t-2xl bg-white p-5 shadow-2xl sm:rounded-2xl sm:p-7">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.14em] text-emerald-800">Escrow Packing Proof</p>
+                <h2 id="packing-modal-title" className="mt-1 text-xl font-bold text-slate-900">
+                  Upload Order Packing Video
+                </h2>
+                <p className="mt-1 text-sm text-slate-500">
+                  Record and upload a video showing the item condition and packaging for Order #{String(packingModalOrder.id).slice(-6).toUpperCase()}.
+                </p>
+              </div>
+              <button
+                type="button"
+                aria-label="Close packing video modal"
+                onClick={() => setPackingModalOrder(null)}
+                className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-slate-500 hover:bg-slate-100"
+              >
+                <X aria-hidden="true" className="h-4 w-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handlePackingProofSubmit} className="mt-5 space-y-4">
+              {packingVideoPreview ? (
+                <div className="relative overflow-hidden rounded-xl border border-slate-200 bg-slate-950">
+                  <video src={packingVideoPreview} controls className="h-52 w-full object-contain" />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPackingVideoFile(null);
+                      setPackingVideoPreview('');
+                      setPackingVideoUrl('');
+                    }}
+                    className="absolute right-3 top-3 rounded-lg bg-slate-900/80 px-3 py-1.5 text-xs font-bold text-white hover:bg-slate-900"
+                  >
+                    Replace video
+                  </button>
+                </div>
+              ) : (
+                <label className="flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-300 bg-slate-50/60 px-4 py-7 text-center transition hover:border-emerald-700 hover:bg-emerald-50/30">
+                  <Video className="h-8 w-8 text-emerald-800" />
+                  <span className="mt-2 text-xs font-bold text-slate-700">Click to record or select packing video</span>
+                  <span className="mt-0.5 text-[11px] text-slate-500">MP4, MOV, WEBM up to 50MB</span>
+                  <input type="file" accept="video/*" capture="environment" onChange={handlePackingVideoSelection} className="hidden" />
+                </label>
+              )}
+
+              <label className="block text-xs font-semibold text-slate-700">
+                Or paste a direct video URL
+                <input
+                  type="url"
+                  value={packingVideoUrl}
+                  onChange={(e) => {
+                    setPackingVideoUrl(e.target.value);
+                    setPackingVideoPreview(e.target.value);
+                  }}
+                  placeholder="https://res.cloudinary.com/..."
+                  className="mt-1.5 h-10 w-full rounded-lg border border-slate-300 px-3 text-xs outline-none focus:border-emerald-700"
+                />
+              </label>
+
+              {packingProofError && (
+                <p role="alert" className="text-sm font-medium text-rose-700">
+                  {packingProofError}
+                </p>
+              )}
+
+              <div className="flex flex-col-reverse gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  onClick={() => setPackingModalOrder(null)}
+                  className="h-10 rounded-lg border border-slate-300 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isUploadingPackingProof}
+                  className="h-10 rounded-lg bg-emerald-800 px-4 text-sm font-semibold text-white transition hover:bg-emerald-900 disabled:opacity-60"
+                >
+                  {isUploadingPackingProof ? 'Uploading video…' : 'Save packing video'}
                 </button>
               </div>
             </form>
