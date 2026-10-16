@@ -201,7 +201,7 @@ const Navbar = () => {
             <Mail className="h-4 w-4" />
           </a>
 
-          {/* <button
+          <button
             type="button"
             aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
             aria-pressed={theme === 'dark'}
@@ -209,7 +209,7 @@ const Navbar = () => {
             className={iconButton}
           >
             {theme === 'light' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
-          </button> */}
+          </button>
 
           {/* Notification Bell & Dropdown.
               On phones the panel anchors to the full-width header (wrapper is not
