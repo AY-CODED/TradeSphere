@@ -1,4 +1,4 @@
-// src/pages/VendorWorkspace.jsx (With Live Notifications, Payouts/Payments Tab & Withdrawal Modal)
+// src/pages/VendorWorkspace.jsx (With 85%/15% Commission Split & Nigerian Bank Selector)
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowRight,
@@ -44,6 +44,32 @@ import {
 } from '../api/auth';
 import { uploadImageToCloudinary } from '../utils/cloudinary';
 import { formatPrice } from '../utils/formatPrice';
+
+const NIGERIAN_BANKS = [
+  { name: 'Access Bank', code: '044' },
+  { name: 'Citibank Nigeria', code: '023' },
+  { name: 'Ecobank Nigeria', code: '050' },
+  { name: 'Fidelity Bank', code: '070' },
+  { name: 'First Bank of Nigeria', code: '011' },
+  { name: 'First City Monument Bank (FCMB)', code: '214' },
+  { name: 'Globus Bank', code: '00103' },
+  { name: 'Guaranty Trust Bank (GTBank)', code: '058' },
+  { name: 'Keystone Bank', code: '082' },
+  { name: 'Kuda Bank', code: '50211' },
+  { name: 'Moniepoint MFB', code: '50515' },
+  { name: 'OPay Digital Services (Paycom)', code: '999992' },
+  { name: 'PalmPay', code: '999991' },
+  { name: 'Polaris Bank', code: '076' },
+  { name: 'Providus Bank', code: '101' },
+  { name: 'Stanbic IBTC Bank', code: '221' },
+  { name: 'Standard Chartered Bank', code: '068' },
+  { name: 'Sterling Bank', code: '232' },
+  { name: 'Union Bank of Nigeria', code: '032' },
+  { name: 'United Bank for Africa (UBA)', code: '033' },
+  { name: 'Unity Bank', code: '215' },
+  { name: 'Wema Bank', code: '035' },
+  { name: 'Zenith Bank', code: '057' },
+];
 
 const navigation = [
   { label: 'Overview', icon: LayoutDashboard, description: 'Your business at a glance' },
@@ -111,7 +137,8 @@ const initialProductForm = {
 };
 
 const initialWithdrawForm = {
-  bankName: '',
+  bankCode: '058',
+  bankName: 'Guaranty Trust Bank (GTBank)',
   accountNumber: '',
   accountName: '',
 };
@@ -234,13 +261,18 @@ const VendorWorkspace = () => {
     [payments]
   );
 
-  const withdrawnBalance = useMemo(
+  const withdrawnGrossBalance = useMemo(
     () =>
       payments
         .filter((p) => p.status === 'WITHDRAWN')
         .reduce((sum, p) => sum + Number(p.amount || 0), 0),
     [payments]
   );
+
+  // 85% / 15% split calculations for vendor transparency
+  const vendorNetAvailable = useMemo(() => Math.round(releasedBalance * 0.85 * 100) / 100, [releasedBalance]);
+  const platformFeeOnAvailable = useMemo(() => Math.round(releasedBalance * 0.15 * 100) / 100, [releasedBalance]);
+  const withdrawnNetBalance = useMemo(() => Math.round(withdrawnGrossBalance * 0.85 * 100) / 100, [withdrawnGrossBalance]);
 
   const totalUnitsInStock = useMemo(
     () => products.reduce((sum, p) => sum + Number(p.stock || 0), 0),
@@ -251,7 +283,7 @@ const VendorWorkspace = () => {
     {
       label: 'Gross sales',
       icon: Wallet,
-      value: formatPrice ? formatPrice(grossSales) : `$${grossSales.toFixed(2)}`,
+      value: formatPrice ? formatPrice(grossSales) : `₦${grossSales.toFixed(2)}`,
       subtext: `${orders.length} total order(s)`,
     },
     {
@@ -269,8 +301,8 @@ const VendorWorkspace = () => {
     {
       label: 'Escrow balance',
       icon: ShieldCheck,
-      value: formatPrice ? formatPrice(escrowBalance) : `$${escrowBalance.toFixed(2)}`,
-      subtext: `Released: ${formatPrice ? formatPrice(releasedBalance) : `$${releasedBalance.toFixed(2)}`}`,
+      value: formatPrice ? formatPrice(escrowBalance) : `₦${escrowBalance.toFixed(2)}`,
+      subtext: `Net Available (85%): ${formatPrice ? formatPrice(vendorNetAvailable) : `₦${vendorNetAvailable.toFixed(2)}`}`,
     },
   ];
 
@@ -438,19 +470,30 @@ const VendorWorkspace = () => {
   const openWithdrawModal = () => {
     setWithdrawError('');
     setWithdrawForm({
-      bankName: '',
+      bankCode: NIGERIAN_BANKS[7].code, // Default GTBank (058)
+      bankName: NIGERIAN_BANKS[7].name,
       accountNumber: '',
       accountName: vendorName,
     });
     setWithdrawModalOpen(true);
   };
 
+  const handleBankChange = (event) => {
+    const selectedCode = event.target.value;
+    const bankObj = NIGERIAN_BANKS.find((b) => b.code === selectedCode);
+    setWithdrawForm((prev) => ({
+      ...prev,
+      bankCode: selectedCode,
+      bankName: bankObj ? bankObj.name : '',
+    }));
+  };
+
   const handleWithdrawSubmit = async (event) => {
     event.preventDefault();
     if (!vendorId) return;
 
-    if (withdrawForm.accountNumber.trim().length < 10) {
-      setWithdrawError('Please enter a valid 10-digit bank account number.');
+    if (withdrawForm.accountNumber.trim().length !== 10) {
+      setWithdrawError('Please enter a valid 10-digit NUBAN bank account number.');
       return;
     }
 
@@ -459,6 +502,7 @@ const VendorWorkspace = () => {
     try {
       const result = await withdrawVendorFunds({
         vendorId,
+        bankCode: withdrawForm.bankCode,
         bankName: withdrawForm.bankName.trim(),
         accountNumber: withdrawForm.accountNumber.trim(),
         accountName: withdrawForm.accountName.trim(),
@@ -467,12 +511,15 @@ const VendorWorkspace = () => {
       setPayments((prev) =>
         prev.map((p) => (p.status === 'RELEASED' ? { ...p, status: 'WITHDRAWN' } : p))
       );
-      setProductSuccess(result?.message || 'Withdrawal processed successfully to your bank account.');
+      setProductSuccess(
+        result?.message ||
+          `85% net payout (${formatPrice ? formatPrice(vendorNetAvailable) : `₦${vendorNetAvailable.toFixed(2)}`}) processed to ${withdrawForm.bankName}.`
+      );
       setVendorActivity((current) => [
         {
           id: `WITHDRAW-${Date.now()}`,
-          action: 'Withdrew released payouts',
-          detail: `Transferred available funds to ${withdrawForm.bankName} (${withdrawForm.accountNumber}).`,
+          action: 'Withdrew released payouts (85% Net)',
+          detail: `Transferred ${formatPrice ? formatPrice(vendorNetAvailable) : `₦${vendorNetAvailable.toFixed(2)}`} to ${withdrawForm.bankName} (${withdrawForm.accountNumber}). 15% platform fee retained.`,
           time: new Date().toLocaleString(),
         },
         ...current,
@@ -749,7 +796,7 @@ const VendorWorkspace = () => {
                           <div className="flex items-center gap-3">
                             <div className="text-right">
                               <p className="text-sm font-bold text-emerald-800">
-                                {formatPrice ? formatPrice(Number(product.price || 0)) : `$${Number(product.price || 0).toFixed(2)}`}
+                                {formatPrice ? formatPrice(Number(product.price || 0)) : `₦${Number(product.price || 0).toFixed(2)}`}
                               </p>
                               <p className="mt-0.5 text-xs text-slate-500">{product.stock ?? 0} in stock</p>
                             </div>
@@ -854,7 +901,7 @@ const VendorWorkspace = () => {
                         <td className="py-4 px-4 text-slate-600">{product.category || '—'}</td>
                         <td className="py-4 px-4 text-slate-500">{product.sku || '—'}</td>
                         <td className="py-4 px-4 font-semibold text-slate-900">
-                          {formatPrice ? formatPrice(Number(product.price || 0)) : `$${Number(product.price || 0).toFixed(2)}`}
+                          {formatPrice ? formatPrice(Number(product.price || 0)) : `₦${Number(product.price || 0).toFixed(2)}`}
                         </td>
                         <td className="py-4 px-4">
                           <span className={`inline-block rounded-full px-2.5 py-1 text-xs font-bold ${
@@ -895,12 +942,14 @@ const VendorWorkspace = () => {
               <div className="grid gap-4 sm:grid-cols-3">
                 <article className="rounded-xl border border-slate-200 bg-white p-5">
                   <div className="flex items-center justify-between">
-                    <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Available to Withdraw</p>
+                    <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Available to Withdraw (85% Net)</p>
                   </div>
                   <p className="mt-2 text-3xl font-bold text-emerald-700">
-                    {formatPrice ? formatPrice(releasedBalance) : `$${releasedBalance.toFixed(2)}`}
+                    {formatPrice ? formatPrice(vendorNetAvailable) : `₦${vendorNetAvailable.toFixed(2)}`}
                   </p>
-                  <p className="mt-1 text-xs text-slate-500">Released after buyer packing approval</p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Gross Released: {formatPrice ? formatPrice(releasedBalance) : `₦${releasedBalance.toFixed(2)}`} (15% platform fee applied)
+                  </p>
                   <button
                     type="button"
                     disabled={releasedBalance <= 0}
@@ -908,20 +957,20 @@ const VendorWorkspace = () => {
                     className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-800 px-4 py-2 text-xs font-bold text-white transition hover:bg-emerald-900 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <Landmark className="h-3.5 w-3.5" />
-                    Withdraw to bank
+                    Withdraw 85% to bank
                   </button>
                 </article>
                 <article className="rounded-xl border border-slate-200 bg-white p-5">
                   <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Pending in Escrow</p>
                   <p className="mt-2 text-3xl font-bold text-amber-600">
-                    {formatPrice ? formatPrice(escrowBalance) : `$${escrowBalance.toFixed(2)}`}
+                    {formatPrice ? formatPrice(escrowBalance) : `₦${escrowBalance.toFixed(2)}`}
                   </p>
                   <p className="mt-1 text-xs text-slate-500">Protected until buyer approves packing proof</p>
                 </article>
                 <article className="rounded-xl border border-slate-200 bg-white p-5">
-                  <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Total Withdrawn</p>
+                  <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Total Withdrawn (85% Net)</p>
                   <p className="mt-2 text-3xl font-bold text-slate-900">
-                    {formatPrice ? formatPrice(withdrawnBalance) : `$${withdrawnBalance.toFixed(2)}`}
+                    {formatPrice ? formatPrice(withdrawnNetBalance) : `₦${withdrawnNetBalance.toFixed(2)}`}
                   </p>
                   <p className="mt-1 text-xs text-slate-500">Successfully paid out to your bank account</p>
                 </article>
@@ -930,30 +979,39 @@ const VendorWorkspace = () => {
               <div className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
                 <h2 className="text-base font-bold text-slate-900">Escrow & Payment Ledger</h2>
                 <div className="mt-4 divide-y divide-slate-100">
-                  {payments.map((payment) => (
-                    <div key={payment.id} className="flex flex-wrap items-center justify-between gap-4 py-4">
-                      <div>
-                        <p className="font-bold text-slate-900">{payment.transactionReference || `PAY-${payment.id.slice(-6)}`}</p>
-                        <p className="mt-0.5 text-xs text-slate-500">
-                          Order #{String(payment.orderId).slice(-6).toUpperCase()} · Buyer: {payment.buyerName || 'Verified Buyer'}
-                        </p>
+                  {payments.map((payment) => {
+                    const gross = Number(payment.amount || 0);
+                    const netVendor = Math.round(gross * 0.85 * 100) / 100;
+                    return (
+                      <div key={payment.id} className="flex flex-wrap items-center justify-between gap-4 py-4">
+                        <div>
+                          <p className="font-bold text-slate-900">{payment.transactionReference || `PAY-${payment.id.slice(-6)}`}</p>
+                          <p className="mt-0.5 text-xs text-slate-500">
+                            Order #{String(payment.orderId).slice(-6).toUpperCase()} · Buyer: {payment.buyerName || 'Verified Buyer'}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <span className={`rounded-full px-3 py-1 text-xs font-bold ${
+                            payment.status === 'WITHDRAWN'
+                              ? 'bg-slate-100 text-slate-700'
+                              : payment.status === 'RELEASED'
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : 'bg-amber-100 text-amber-800'
+                          }`}>
+                            {payment.status}
+                          </span>
+                          <div className="text-right">
+                            <p className="font-bold text-slate-900">
+                              {formatPrice ? formatPrice(gross) : `₦${gross.toFixed(2)}`}
+                            </p>
+                            <p className="text-[11px] font-medium text-emerald-700">
+                              Net (85%): {formatPrice ? formatPrice(netVendor) : `₦${netVendor.toFixed(2)}`}
+                            </p>
+                          </div>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-4">
-                        <span className={`rounded-full px-3 py-1 text-xs font-bold ${
-                          payment.status === 'WITHDRAWN'
-                            ? 'bg-slate-100 text-slate-700'
-                            : payment.status === 'RELEASED'
-                            ? 'bg-emerald-100 text-emerald-800'
-                            : 'bg-amber-100 text-amber-800'
-                        }`}>
-                          {payment.status}
-                        </span>
-                        <p className="font-bold text-slate-900">
-                          {formatPrice ? formatPrice(Number(payment.amount || 0)) : `$${Number(payment.amount || 0).toFixed(2)}`}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </section>
@@ -973,7 +1031,7 @@ const VendorWorkspace = () => {
                         {order.status || 'PAID'}
                       </span>
                       <p className="font-bold text-slate-900">
-                        {formatPrice ? formatPrice(Number(order.totalAmount || 0)) : `$${Number(order.totalAmount || 0).toFixed(2)}`}
+                        {formatPrice ? formatPrice(Number(order.totalAmount || 0)) : `₦${Number(order.totalAmount || 0).toFixed(2)}`}
                       </p>
                     </div>
                   </div>
@@ -1089,7 +1147,7 @@ const VendorWorkspace = () => {
                   name="productName"
                   value={formValues.productName}
                   onChange={handleFieldChange('productName')}
-                  placeholder="e.g. Commercial water pump"
+                  placeholder="e.g. Lacoste Daily Classic Piqué PVC Backpack"
                   className="mt-1.5 h-11 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-emerald-700"
                 />
               </label>
@@ -1102,7 +1160,7 @@ const VendorWorkspace = () => {
                     name="category"
                     value={formValues.category}
                     onChange={handleFieldChange('category')}
-                    placeholder="e.g. Industrial Tools"
+                    placeholder="e.g. Fashion & Accessories"
                     className="mt-1.5 h-11 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-emerald-700"
                   />
                 </label>
@@ -1112,7 +1170,7 @@ const VendorWorkspace = () => {
                     name="sku"
                     value={formValues.sku}
                     onChange={handleFieldChange('sku')}
-                    placeholder="Your stock reference"
+                    placeholder="e.g. LAC-BP-001"
                     className="mt-1.5 h-11 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-emerald-700"
                   />
                 </label>
@@ -1193,16 +1251,12 @@ const VendorWorkspace = () => {
           <section role="dialog" aria-modal="true" aria-labelledby="withdraw-modal-title" className="w-full max-w-md rounded-t-2xl bg-white p-5 shadow-2xl sm:rounded-2xl sm:p-7">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-xs font-bold uppercase tracking-[0.14em] text-emerald-800">Vendor Payout</p>
+                <p className="text-xs font-bold uppercase tracking-[0.14em] text-emerald-800">Vendor Payout (85% / 15% Split)</p>
                 <h2 id="withdraw-modal-title" className="mt-1 text-xl font-bold text-slate-900">
                   Withdraw Released Funds
                 </h2>
                 <p className="mt-1 text-sm text-slate-500">
-                  Transfer your available balance of{' '}
-                  <strong className="text-emerald-800">
-                    {formatPrice ? formatPrice(releasedBalance) : `$${releasedBalance.toFixed(2)}`}
-                  </strong>{' '}
-                  directly to your bank account.
+                  Transfer your 85% net share directly to your Nigerian bank account via Paystack.
                 </p>
               </div>
               <button
@@ -1215,16 +1269,40 @@ const VendorWorkspace = () => {
               </button>
             </div>
 
-            <form onSubmit={handleWithdrawSubmit} className="mt-6 space-y-4">
+            <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50/60 p-3.5 text-xs space-y-1.5">
+              <div className="flex justify-between text-slate-600">
+                <span>Gross Released Balance (100%):</span>
+                <span className="font-semibold text-slate-800">
+                  {formatPrice ? formatPrice(releasedBalance) : `₦${releasedBalance.toFixed(2)}`}
+                </span>
+              </div>
+              <div className="flex justify-between text-slate-600">
+                <span>TradeSphere Platform Fee (15%):</span>
+                <span className="font-semibold text-rose-600">
+                  -{formatPrice ? formatPrice(platformFeeOnAvailable) : `₦${platformFeeOnAvailable.toFixed(2)}`}
+                </span>
+              </div>
+              <div className="flex justify-between border-t border-emerald-200 pt-1.5 text-sm font-bold text-emerald-900">
+                <span>Net Payout to Bank (85%):</span>
+                <span>{formatPrice ? formatPrice(vendorNetAvailable) : `₦${vendorNetAvailable.toFixed(2)}`}</span>
+              </div>
+            </div>
+
+            <form onSubmit={handleWithdrawSubmit} className="mt-5 space-y-4">
               <label className="block text-sm font-semibold text-slate-700">
-                Bank name
-                <input
+                Select Nigerian Bank
+                <select
                   required
-                  value={withdrawForm.bankName}
-                  onChange={(e) => setWithdrawForm((prev) => ({ ...prev, bankName: e.target.value }))}
-                  placeholder="e.g. Guaranty Trust Bank (GTBank)"
-                  className="mt-1.5 h-11 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-emerald-700"
-                />
+                  value={withdrawForm.bankCode}
+                  onChange={handleBankChange}
+                  className="mt-1.5 h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none focus:border-emerald-700"
+                >
+                  {NIGERIAN_BANKS.map((bank) => (
+                    <option key={bank.code} value={bank.code}>
+                      {bank.name}
+                    </option>
+                  ))}
+                </select>
               </label>
 
               <label className="block text-sm font-semibold text-slate-700">
@@ -1269,7 +1347,9 @@ const VendorWorkspace = () => {
                   disabled={isWithdrawing}
                   className="h-10 rounded-lg bg-emerald-800 px-4 text-sm font-semibold text-white transition hover:bg-emerald-900 disabled:opacity-60"
                 >
-                  {isWithdrawing ? 'Processing payout…' : 'Confirm withdrawal'}
+                  {isWithdrawing
+                    ? 'Processing payout…'
+                    : `Withdraw ${formatPrice ? formatPrice(vendorNetAvailable) : `₦${vendorNetAvailable.toFixed(2)}`}`}
                 </button>
               </div>
             </form>
