@@ -32,7 +32,7 @@ const fieldsByStep = [
   [
     { name: 'firstName', label: 'First Name', placeholder: 'e.g. Samuel' },
     { name: 'lastName', label: 'Last Name', placeholder: 'e.g. Kojo' },
-    { name: 'email', label: 'Work Email', placeholder: 'samuel.k@company.com', type: 'email' },
+    { name: 'email', label: 'Work Email', placeholder: 'Enter your email address', type: 'email' },
     { name: 'phone', label: 'Phone Number', placeholder: '24 123 4567', prefix: '+234' },
     { name: 'address', label: 'Full Address', placeholder: 'Apartment, street name, area', wide: true },
     { name: 'city', label: 'City', placeholder: 'e.g. Lagos' },

@@ -71,7 +71,7 @@ const SignIn = () => {
           onChange={(event) => setEmail(event.target.value)}
           autoComplete="email"
           inputMode="email"
-          placeholder="you@company.com"
+          placeholder="Enter your email address"
           error={errors.email}
         />
         <AuthField

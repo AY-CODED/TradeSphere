@@ -99,18 +99,18 @@ const demoTables = {
     columns: [
       ['name', 'Name'],
       ['type', 'Account type'],
-      ['email', 'Email'],
+      ['email', 'Account handle'],
       ['joined', 'Joined'],
       ['verification', 'Verification'],
       ['status', 'Status'],
     ],
     rows: [
-      { name: 'Abeke Bikila', type: 'Buyer', email: 'abeke@example.com', joined: 'Oct 10, 2026', verification: 'Verified', status: 'Active' },
-      { name: 'Kofi Mensah', type: 'Vendor', email: 'kofi@accratrade.com', joined: 'Oct 08, 2026', verification: 'In review', status: 'Active' },
-      { name: 'Sarah Johnson', type: 'Buyer', email: 'sarah@example.com', joined: 'Oct 06, 2026', verification: 'Verified', status: 'Active' },
-      { name: 'Amina Yusuf', type: 'Vendor', email: 'amina@northstar.co', joined: 'Oct 04, 2026', verification: 'Action needed', status: 'Pending' },
-      { name: 'David Omondi', type: 'Buyer', email: 'david@example.com', joined: 'Oct 01, 2026', verification: 'Not required', status: 'Restricted' },
-      { name: 'Fatima Zarah', type: 'Vendor', email: 'fatima@zarahexport.com', joined: 'Sep 28, 2026', verification: 'Verified', status: 'Active' },
+      { name: 'Abeke Bikila', type: 'Buyer', email: 'abeke •••• (Protected)', joined: 'Oct 10, 2026', verification: 'Verified', status: 'Active' },
+      { name: 'Kofi Mensah', type: 'Vendor', email: 'kofi •••• (Accra Trade)', joined: 'Oct 08, 2026', verification: 'In review', status: 'Active' },
+      { name: 'Sarah Johnson', type: 'Buyer', email: 'sarah •••• (Protected)', joined: 'Oct 06, 2026', verification: 'Verified', status: 'Active' },
+      { name: 'Amina Yusuf', type: 'Vendor', email: 'amina •••• (Northstar)', joined: 'Oct 04, 2026', verification: 'Action needed', status: 'Pending' },
+      { name: 'David Omondi', type: 'Buyer', email: 'david •••• (Protected)', joined: 'Oct 01, 2026', verification: 'Not required', status: 'Restricted' },
+      { name: 'Fatima Zarah', type: 'Vendor', email: 'fatima •••• (Zarah Export)', joined: 'Sep 28, 2026', verification: 'Verified', status: 'Active' },
     ],
   },
   orders: {
@@ -154,7 +154,7 @@ const vendorHistory = {
   'kofi-mensah': {
     name: 'Kofi Mensah',
     business: 'Accra Trade Co.',
-    email: 'kofi@accratrade.com',
+    email: 'kofi •••• (Verified Vendor)',
     status: 'Active',
     verification: 'In review',
     events: [
@@ -167,7 +167,7 @@ const vendorHistory = {
   'amina-yusuf': {
     name: 'Amina Yusuf',
     business: 'Amina Imports',
-    email: 'amina@northstar.co',
+    email: 'amina •••• (Pending Verification)',
     status: 'Pending',
     verification: 'Action needed',
     events: [
@@ -180,7 +180,7 @@ const vendorHistory = {
   'fatima-zarah': {
     name: 'Fatima Zarah',
     business: 'Zarah Exports',
-    email: 'fatima@zarahexport.com',
+    email: 'fatima •••• (Verified Vendor)',
     status: 'Active',
     verification: 'Verified',
     events: [
@@ -253,7 +253,8 @@ const AdminDashboard = () => {
     ? { title: selectedVendor?.business || 'Vendor history', description: selectedVendor ? `Account activity and history for ${selectedVendor.name}.` : 'No sample account history is available for this vendor.' }
     : sectionDetails[activeSection];
   const table = demoTables[activeSection];
-  const adminName = user?.fullName || user?.name || user?.email || 'Platform administrator';
+  const rawAdminName = user?.fullName || user?.name || user?.email || 'Platform administrator';
+  const adminName = rawAdminName.includes('@') ? rawAdminName.split('@')[0] : rawAdminName;
   const adminInitials = adminName.split(/[\s@.]+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase();
 
   const statusOptions = useMemo(() => (
@@ -493,7 +494,7 @@ const AdminDashboard = () => {
         <section className="grid gap-4 sm:grid-cols-3">
           {[
             ['Vendor contact', selectedVendor.name],
-            ['Email', selectedVendor.email],
+            ['Account handle', selectedVendor.email],
             ['Account status', selectedVendor.status],
           ].map(([label, value]) => (
             <article key={label} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">

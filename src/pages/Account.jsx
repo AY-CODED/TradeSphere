@@ -313,7 +313,7 @@ const Account = () => {
                           required
                           value={formValues.email}
                           onChange={(e) => setFormValues((prev) => ({ ...prev, email: e.target.value }))}
-                          placeholder="JohnDoe@gmail.com"
+                          placeholder="Enter your email address"
                           className="mt-1.5 w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-green-600"
                         />
                       </label>
