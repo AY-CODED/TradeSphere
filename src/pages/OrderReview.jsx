@@ -1,7 +1,7 @@
 // src/pages/OrderReview.jsx
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ArrowLeft, Camera, CheckCircle, Clock3, Eye, Flag, MessageCircle, Package, ShieldCheck, Truck } from 'lucide-react';
+import { ArrowLeft, Camera, CheckCircle, Clock3, Eye, Flag, MessageCircle, Package, ShieldCheck, Video } from 'lucide-react';
 import ProductArt from '../components/ui/ProductArt';
 import { approveOrderPacking, createDispute, getMyOrders } from '../api/auth';
 
@@ -46,7 +46,16 @@ const OrderReview = () => {
   const productForArt = {
     name: firstItem.productName || firstItem.name || 'Order Item',
     category: firstItem.category || 'General',
+    imageUrl: firstItem.imageUrl || '',
   };
+
+  const packingVideoUrl =
+    order?.packingVideoUrl ||
+    firstItem?.videoUrl ||
+    (order?.id && typeof window !== 'undefined' ? localStorage.getItem(`ts_packing_video_${order.id}`) : '');
+
+  const rawVendorName = firstItem.vendorName || 'Verified TradeSphere Vendor';
+  const cleanVendorName = rawVendorName.includes('@') ? rawVendorName.split('@')[0] : rawVendorName;
 
   const allChecked = checked.length === checklistItems.length;
 
@@ -132,24 +141,42 @@ const OrderReview = () => {
             <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
               <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
                 <div className="flex items-center gap-3">
-                  <Camera className="h-5 w-5 text-green-700" />
+                  {packingVideoUrl ? (
+                    <Video className="h-5 w-5 text-green-700" />
+                  ) : (
+                    <Camera className="h-5 w-5 text-green-700" />
+                  )}
                   <div>
-                    <p className="text-sm font-bold text-slate-900">High-res photo proof</p>
+                    <p className="text-sm font-bold text-slate-900">
+                      {packingVideoUrl ? 'Live vendor packing video proof' : 'High-res photo proof'}
+                    </p>
                     <p className="text-xs text-slate-500">
                       Recorded {order.createdAt ? new Date(order.createdAt).toLocaleString() : 'Live'}
                     </p>
                   </div>
                 </div>
-                <span className="rounded-lg bg-green-100 px-3 py-2 text-xs font-bold text-green-800">Photo · Video</span>
+                <span className="rounded-lg bg-green-100 px-3 py-2 text-xs font-bold text-green-800">
+                  {packingVideoUrl ? 'Verified Video' : 'Photo · Video'}
+                </span>
               </div>
-              <div className="relative">
-                <ProductArt product={productForArt} className="aspect-[16/9] w-full" />
+              <div className="relative bg-slate-950">
+                {packingVideoUrl ? (
+                  <video
+                    src={packingVideoUrl}
+                    controls
+                    className="aspect-[16/9] w-full object-contain"
+                  />
+                ) : (
+                  <ProductArt product={productForArt} className="aspect-[16/9] w-full" />
+                )}
                 <span className="absolute left-4 top-4 rounded-full bg-green-700 px-3 py-1 text-[10px] font-bold uppercase text-white">
                   Verified packing
                 </span>
-                <button type="button" className="absolute bottom-4 right-4 rounded-lg bg-white p-3 text-slate-700 shadow" aria-label="View packing photo">
-                  <Eye className="h-5 w-5" />
-                </button>
+                {!packingVideoUrl && (
+                  <button type="button" className="absolute bottom-4 right-4 rounded-lg bg-white p-3 text-slate-700 shadow" aria-label="View packing photo">
+                    <Eye className="h-5 w-5" />
+                  </button>
+                )}
               </div>
             </section>
 
@@ -252,13 +279,17 @@ const OrderReview = () => {
                   <Package className="h-5 w-5 text-slate-500" />
                 </div>
                 <div>
-                  <p className="font-bold text-slate-900">{firstItem.vendorName || 'Verified TradeSphere Vendor'}</p>
+                  <p className="font-bold text-slate-900">{cleanVendorName}</p>
                   <p className="text-xs text-slate-500">Verified marketplace partner</p>
                 </div>
               </div>
-              <a href="mailto:support@tradesphere.africa" className="mt-4 flex items-center justify-center gap-2 rounded-lg border border-slate-200 px-3 py-2.5 text-xs font-bold text-green-800">
-                <MessageCircle className="h-4 w-4" /> Chat with vendor
-              </a>
+              <button
+                type="button"
+                onClick={() => setReporting(true)}
+                className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200 px-3 py-2.5 text-xs font-bold text-green-800 hover:bg-green-50"
+              >
+                <MessageCircle className="h-4 w-4" /> Message vendor support
+              </button>
             </section>
           </aside>
         </div>

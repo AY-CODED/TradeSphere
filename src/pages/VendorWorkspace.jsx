@@ -190,7 +190,8 @@ const VendorWorkspace = () => {
   const { user } = useAuth();
   const vendorId = user?.id;
   const workspaceLoading = Boolean(vendorId) && isLoading;
-  const vendorName = user?.businessName || user?.fullName || user?.name || user?.email || 'Your business';
+  const rawVendorName = user?.businessName || user?.fullName || user?.name || user?.email || 'Your business';
+  const vendorName = rawVendorName.includes('@') ? rawVendorName.split('@')[0] : rawVendorName;
   const initials = vendorName
     .split(/[\s@.]+/)
     .filter(Boolean)
@@ -771,14 +772,14 @@ const VendorWorkspace = () => {
         </nav>
 
         <div className="hidden border-t border-slate-200 p-4 lg:block">
-          <a
-            href="mailto:support@tradesphere.africa"
+          <Link
+            to="/account"
             className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
           >
             <CircleHelp aria-hidden="true" className="h-4 w-4" />
             Vendor support
             <ArrowRight aria-hidden="true" className="ml-auto h-3.5 w-3.5" />
-          </a>
+          </Link>
           <LogoutButton className="mt-1 w-full rounded-lg px-3 py-2.5 text-left text-sm font-medium text-slate-600 transition hover:bg-rose-50 hover:text-rose-700 disabled:opacity-60" />
         </div>
       </aside>
@@ -1186,12 +1187,15 @@ const VendorWorkspace = () => {
                   {payments.map((payment) => {
                     const gross = Number(payment.amount || 0);
                     const netVendor = Math.round(gross * 0.85 * 100) / 100;
+                    const safeBuyer = payment.buyerName && payment.buyerName.includes('@')
+                      ? payment.buyerName.split('@')[0]
+                      : (payment.buyerName || 'Verified Buyer');
                     return (
                       <div key={payment.id} className="flex flex-wrap items-center justify-between gap-4 py-4">
                         <div>
                           <p className="font-bold text-slate-900">{payment.transactionReference || `PAY-${payment.id.slice(-6)}`}</p>
                           <p className="mt-0.5 text-xs text-slate-500">
-                            Order #{String(payment.orderId).slice(-6).toUpperCase()} · Buyer: {payment.buyerName || 'Verified Buyer'}
+                            Order #{String(payment.orderId).slice(-6).toUpperCase()} · Buyer: {safeBuyer}
                           </p>
                         </div>
                         <div className="flex items-center gap-4">
