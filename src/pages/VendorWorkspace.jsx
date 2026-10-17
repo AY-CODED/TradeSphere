@@ -1,4 +1,4 @@
-// src/pages/VendorWorkspace.jsx (With Fixed Category Dropdown, 85%/15% Commission Split, Auto-Resolve NUBAN, Product Video & Order Packing Video Upload)
+// src/pages/VendorWorkspace.jsx (With Custom-Designed Category & Bank Dropdowns, 85%/15% Commission Split, Auto-Resolve NUBAN, Product Video & Order Packing Video Upload)
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowRight,
@@ -8,6 +8,7 @@ import {
   Building2,
   Check,
   CheckCheck,
+  ChevronDown,
   ChevronRight,
   CircleHelp,
   Film,
@@ -22,6 +23,7 @@ import {
   ShieldCheck,
   ShoppingBag,
   Sparkles,
+  Tag,
   Trash2,
   UsersRound,
   Video,
@@ -174,6 +176,12 @@ const VendorWorkspace = () => {
   const [notifOpen, setNotifOpen] = useState(false);
   const notifRef = useRef(null);
 
+  // Custom Dropdown States & Refs
+  const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
+  const categoryDropdownRef = useRef(null);
+  const [bankDropdownOpen, setBankDropdownOpen] = useState(false);
+  const bankDropdownRef = useRef(null);
+
   const [vendorActivity, setVendorActivity] = useState([]);
   const [formValues, setFormValues] = useState(initialProductForm);
   const [imageFile, setImageFile] = useState(null);
@@ -251,6 +259,12 @@ const VendorWorkspace = () => {
     const handleClickOutside = (event) => {
       if (notifRef.current && !notifRef.current.contains(event.target)) {
         setNotifOpen(false);
+      }
+      if (categoryDropdownRef.current && !categoryDropdownRef.current.contains(event.target)) {
+        setCategoryDropdownOpen(false);
+      }
+      if (bankDropdownRef.current && !bankDropdownRef.current.contains(event.target)) {
+        setBankDropdownOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -382,6 +396,7 @@ const VendorWorkspace = () => {
     setImagePreview('');
     setVideoFile(null);
     setVideoPreview('');
+    setCategoryDropdownOpen(false);
     setProductFormOpen(true);
   };
 
@@ -405,6 +420,7 @@ const VendorWorkspace = () => {
     setImagePreview(product.imageUrl || '');
     setVideoFile(null);
     setVideoPreview(product.videoUrl || '');
+    setCategoryDropdownOpen(false);
     setProductFormOpen(true);
   };
 
@@ -437,6 +453,11 @@ const VendorWorkspace = () => {
 
   const handleFieldChange = (field) => (event) => {
     setFormValues((current) => ({ ...current, [field]: event.target.value }));
+  };
+
+  const handleCategorySelect = (selectedCategory) => {
+    setFormValues((current) => ({ ...current, category: selectedCategory }));
+    setCategoryDropdownOpen(false);
   };
 
   const handleImageSelection = (event) => {
@@ -629,6 +650,7 @@ const VendorWorkspace = () => {
 
   const openWithdrawModal = () => {
     setWithdrawError('');
+    setBankDropdownOpen(false);
     setWithdrawForm({
       bankCode: NIGERIAN_BANKS[7].code, // Default GTBank (058)
       bankName: NIGERIAN_BANKS[7].name,
@@ -638,17 +660,17 @@ const VendorWorkspace = () => {
     setWithdrawModalOpen(true);
   };
 
-  const handleBankChange = async (event) => {
-    const selectedCode = event.target.value;
-    const bankObj = NIGERIAN_BANKS.find((b) => b.code === selectedCode);
+  const handleBankSelect = async (selectedBank) => {
+    const selectedCode = selectedBank.code;
     const currentAccNum = withdrawForm.accountNumber;
 
     setWithdrawForm((prev) => ({
       ...prev,
       bankCode: selectedCode,
-      bankName: bankObj ? bankObj.name : '',
+      bankName: selectedBank.name,
       accountName: '',
     }));
+    setBankDropdownOpen(false);
 
     if (currentAccNum.length === 10 && selectedCode) {
       setIsResolvingAccount(true);
@@ -1121,7 +1143,12 @@ const VendorWorkspace = () => {
                             </div>
                           </div>
                         </td>
-                        <td className="py-4 px-4 text-slate-600">{product.category || '—'}</td>
+                        <td className="py-4 px-4">
+                          <span className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
+                            <Tag className="h-3 w-3 text-emerald-700" />
+                            {product.category || '—'}
+                          </span>
+                        </td>
                         <td className="py-4 px-4 text-slate-500">{product.sku || '—'}</td>
                         <td className="py-4 px-4 font-semibold text-slate-900">
                           {formatPrice ? formatPrice(Number(product.price || 0)) : `₦${Number(product.price || 0).toFixed(2)}`}
@@ -1441,22 +1468,62 @@ const VendorWorkspace = () => {
               </label>
 
               <div className="grid gap-4 sm:grid-cols-2">
-                <label className="block text-sm font-semibold text-slate-700">
-                  Category
-                  <select
-                    required
-                    name="category"
-                    value={formValues.category}
-                    onChange={handleFieldChange('category')}
-                    className="mt-1.5 h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none focus:border-emerald-700"
+                {/* Custom-Designed Category Dropdown */}
+                <div ref={categoryDropdownRef} className="relative">
+                  <span className="block text-sm font-semibold text-slate-700">Category</span>
+                  <button
+                    type="button"
+                    aria-haspopup="listbox"
+                    aria-expanded={categoryDropdownOpen}
+                    onClick={() => setCategoryDropdownOpen((prev) => !prev)}
+                    className={`mt-1.5 flex h-11 w-full items-center justify-between gap-2 rounded-xl border bg-white px-3.5 text-left text-sm font-medium transition-all ${
+                      categoryDropdownOpen
+                        ? 'border-emerald-700 ring-4 ring-emerald-700/10'
+                        : 'border-slate-300 hover:border-emerald-600/60'
+                    }`}
                   >
-                    {PRODUCT_CATEGORIES.map((categoryOption) => (
-                      <option key={categoryOption} value={categoryOption}>
-                        {categoryOption}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                    <span className="flex min-w-0 items-center gap-2.5 truncate text-slate-800">
+                      <span className="grid h-6 w-6 shrink-0 place-items-center rounded-md bg-emerald-50 text-emerald-800">
+                        <Tag className="h-3.5 w-3.5" />
+                      </span>
+                      <span className="truncate">{formValues.category || PRODUCT_CATEGORIES[0]}</span>
+                    </span>
+                    <ChevronDown
+                      className={`h-4 w-4 shrink-0 text-slate-400 transition-transform duration-200 ${
+                        categoryDropdownOpen ? 'rotate-180 text-emerald-700' : ''
+                      }`}
+                    />
+                  </button>
+
+                  {categoryDropdownOpen && (
+                    <div
+                      role="listbox"
+                      className="absolute left-0 right-0 z-50 mt-2 max-h-60 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-1.5 shadow-xl ring-1 ring-slate-900/5"
+                    >
+                      {PRODUCT_CATEGORIES.map((categoryOption) => {
+                        const isSelected = formValues.category === categoryOption;
+                        return (
+                          <button
+                            key={categoryOption}
+                            type="button"
+                            role="option"
+                            aria-selected={isSelected}
+                            onClick={() => handleCategorySelect(categoryOption)}
+                            className={`flex w-full items-center justify-between gap-2 rounded-xl px-3 py-2.5 text-left text-xs font-semibold transition-colors ${
+                              isSelected
+                                ? 'bg-emerald-800 text-white shadow-sm'
+                                : 'text-slate-700 hover:bg-emerald-50 hover:text-emerald-900'
+                            }`}
+                          >
+                            <span className="truncate">{categoryOption}</span>
+                            {isSelected && <Check className="h-3.5 w-3.5 shrink-0" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
                 <label className="block text-sm font-semibold text-slate-700">
                   SKU <span className="font-normal text-slate-400">(optional)</span>
                   <input
@@ -1464,7 +1531,7 @@ const VendorWorkspace = () => {
                     value={formValues.sku}
                     onChange={handleFieldChange('sku')}
                     placeholder="e.g. LAC-BP-001"
-                    className="mt-1.5 h-11 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-emerald-700"
+                    className="mt-1.5 h-11 w-full rounded-xl border border-slate-300 px-3 text-sm outline-none transition focus:border-emerald-700 focus:ring-4 focus:ring-emerald-700/10"
                   />
                 </label>
                 <label className="block text-sm font-semibold text-slate-700">
@@ -1478,7 +1545,7 @@ const VendorWorkspace = () => {
                     value={formValues.price}
                     onChange={handleFieldChange('price')}
                     placeholder="0.00"
-                    className="mt-1.5 h-11 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-emerald-700"
+                    className="mt-1.5 h-11 w-full rounded-xl border border-slate-300 px-3 text-sm outline-none transition focus:border-emerald-700 focus:ring-4 focus:ring-emerald-700/10"
                   />
                 </label>
                 <label className="block text-sm font-semibold text-slate-700">
@@ -1492,7 +1559,7 @@ const VendorWorkspace = () => {
                     value={formValues.quantity}
                     onChange={handleFieldChange('quantity')}
                     placeholder="0"
-                    className="mt-1.5 h-11 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-emerald-700"
+                    className="mt-1.5 h-11 w-full rounded-xl border border-slate-300 px-3 text-sm outline-none transition focus:border-emerald-700 focus:ring-4 focus:ring-emerald-700/10"
                   />
                 </label>
               </div>
@@ -1505,7 +1572,7 @@ const VendorWorkspace = () => {
                   value={formValues.description}
                   onChange={handleFieldChange('description')}
                   placeholder="Describe the product for buyers"
-                  className="mt-1.5 w-full resize-y rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none focus:border-emerald-700"
+                  className="mt-1.5 w-full resize-y rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none transition focus:border-emerald-700 focus:ring-4 focus:ring-emerald-700/10"
                 />
               </label>
               {productError && <p role="alert" aria-live="polite" className="text-sm font-medium text-rose-700">{productError}</p>}
@@ -1676,21 +1743,61 @@ const VendorWorkspace = () => {
             </div>
 
             <form onSubmit={handleWithdrawSubmit} className="mt-5 space-y-4">
-              <label className="block text-sm font-semibold text-slate-700">
-                Select Nigerian Bank
-                <select
-                  required
-                  value={withdrawForm.bankCode}
-                  onChange={handleBankChange}
-                  className="mt-1.5 h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none focus:border-emerald-700"
+              {/* Custom-Designed Bank Dropdown */}
+              <div ref={bankDropdownRef} className="relative">
+                <span className="block text-sm font-semibold text-slate-700">Select Nigerian Bank</span>
+                <button
+                  type="button"
+                  aria-haspopup="listbox"
+                  aria-expanded={bankDropdownOpen}
+                  onClick={() => setBankDropdownOpen((prev) => !prev)}
+                  className={`mt-1.5 flex h-11 w-full items-center justify-between gap-2 rounded-xl border bg-white px-3.5 text-left text-sm font-medium transition-all ${
+                    bankDropdownOpen
+                      ? 'border-emerald-700 ring-4 ring-emerald-700/10'
+                      : 'border-slate-300 hover:border-emerald-600/60'
+                  }`}
                 >
-                  {NIGERIAN_BANKS.map((bank) => (
-                    <option key={bank.code} value={bank.code}>
-                      {bank.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
+                  <span className="flex min-w-0 items-center gap-2.5 truncate text-slate-800">
+                    <span className="grid h-6 w-6 shrink-0 place-items-center rounded-md bg-emerald-50 text-emerald-800">
+                      <Landmark className="h-3.5 w-3.5" />
+                    </span>
+                    <span className="truncate">{withdrawForm.bankName || 'Select a bank'}</span>
+                  </span>
+                  <ChevronDown
+                    className={`h-4 w-4 shrink-0 text-slate-400 transition-transform duration-200 ${
+                      bankDropdownOpen ? 'rotate-180 text-emerald-700' : ''
+                    }`}
+                  />
+                </button>
+
+                {bankDropdownOpen && (
+                  <div
+                    role="listbox"
+                    className="absolute left-0 right-0 z-50 mt-2 max-h-60 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-1.5 shadow-xl ring-1 ring-slate-900/5"
+                  >
+                    {NIGERIAN_BANKS.map((bank) => {
+                      const isSelected = withdrawForm.bankCode === bank.code;
+                      return (
+                        <button
+                          key={bank.code}
+                          type="button"
+                          role="option"
+                          aria-selected={isSelected}
+                          onClick={() => handleBankSelect(bank)}
+                          className={`flex w-full items-center justify-between gap-2 rounded-xl px-3 py-2.5 text-left text-xs font-semibold transition-colors ${
+                            isSelected
+                              ? 'bg-emerald-800 text-white shadow-sm'
+                              : 'text-slate-700 hover:bg-emerald-50 hover:text-emerald-900'
+                          }`}
+                        >
+                          <span className="truncate">{bank.name}</span>
+                          {isSelected && <Check className="h-3.5 w-3.5 shrink-0" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
 
               <label className="block text-sm font-semibold text-slate-700">
                 Account number (10 digits)
@@ -1700,7 +1807,7 @@ const VendorWorkspace = () => {
                   value={withdrawForm.accountNumber}
                   onChange={handleAccountNumberChange}
                   placeholder="0123456789"
-                  className="mt-1.5 h-11 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-emerald-700"
+                  className="mt-1.5 h-11 w-full rounded-xl border border-slate-300 px-3 text-sm outline-none transition focus:border-emerald-700 focus:ring-4 focus:ring-emerald-700/10"
                 />
               </label>
 
@@ -1711,7 +1818,7 @@ const VendorWorkspace = () => {
                   readOnly
                   value={withdrawForm.accountName}
                   placeholder="Auto-filled via Paystack NUBAN lookup"
-                  className="mt-1.5 h-11 w-full rounded-lg border border-slate-300 bg-slate-50 px-3 text-sm font-medium text-slate-900 outline-none"
+                  className="mt-1.5 h-11 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 text-sm font-medium text-slate-900 outline-none"
                 />
               </label>
 
