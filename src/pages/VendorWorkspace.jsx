@@ -1,4 +1,4 @@
-// src/pages/VendorWorkspace.jsx (With 85%/15% Commission Split, Auto-Resolve NUBAN, Product Video & Order Packing Video Upload)
+// src/pages/VendorWorkspace.jsx (With Fixed Category Dropdown, 85%/15% Commission Split, Auto-Resolve NUBAN, Product Video & Order Packing Video Upload)
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowRight,
@@ -48,6 +48,21 @@ import {
 import { uploadImageToCloudinary, uploadVideoToCloudinary } from '../utils/cloudinary';
 import { formatPrice } from '../utils/formatPrice';
 
+const PRODUCT_CATEGORIES = [
+  'Electronics & Gadgets',
+  'Phones & Tablets',
+  'Computing & Accessories',
+  'Fashion & Accessories',
+  'Health & Beauty',
+  'Home, Kitchen & Appliances',
+  'Groceries & Agriculture',
+  'Industrial & B2B Equipment',
+  'Automotive & Mobility',
+  'Sports, Fitness & Gaming',
+  'Books, Media & Stationery',
+  'Other / General',
+];
+
 const NIGERIAN_BANKS = [
   { name: 'Access Bank', code: '044' },
   { name: 'Citibank Nigeria', code: '023' },
@@ -95,7 +110,7 @@ const sectionEmptyStates = {
   Products: {
     icon: Package,
     title: 'Start building your catalogue',
-    description: 'Add your first product to prepare your TradeSphere storefront for buyers.',
+    description: 'Add your first product to prepare your storefront for buyers.',
   },
   Inventory: {
     icon: Boxes,
@@ -125,13 +140,13 @@ const sectionEmptyStates = {
   Settings: {
     icon: Settings2,
     title: 'Business settings',
-    description: 'Your vendor profile and workspace preferences are managed through your TradeSphere account.',
+    description: 'Your vendor profile and workspace preferences are managed through your account.',
   },
 };
 
 const initialProductForm = {
   productName: '',
-  category: '',
+  category: PRODUCT_CATEGORIES[0],
   sku: '',
   price: '',
   quantity: '',
@@ -373,9 +388,12 @@ const VendorWorkspace = () => {
   const openEditProductForm = (product) => {
     setEditingProductId(product.id);
     setProductError('');
+    const matchedCategory = PRODUCT_CATEGORIES.includes(product.category)
+      ? product.category
+      : PRODUCT_CATEGORIES[0];
     setFormValues({
       productName: product.name || product.productName || '',
-      category: product.category || '',
+      category: matchedCategory,
       sku: product.sku || '',
       price: product.price !== undefined && product.price !== null ? String(product.price) : '',
       quantity: product.stock !== undefined && product.stock !== null ? String(product.stock) : '0',
@@ -742,8 +760,8 @@ const VendorWorkspace = () => {
     <div className="min-h-screen bg-[#f5f7f6] text-slate-900 lg:flex">
       <aside className="flex w-full shrink-0 flex-col border-b border-slate-200 bg-white lg:sticky lg:top-0 lg:h-screen lg:w-[258px] lg:border-b-0 lg:border-r">
         <div className="flex items-center justify-between gap-3 px-5 py-4 lg:px-6 lg:py-6">
-          <Link to="/" aria-label="TradeSphere home" className="inline-flex items-center">
-            <img src={Logo} alt="TradeSphere" className="h-9 w-auto object-contain" />
+          <Link to="/" aria-label="Home" className="inline-flex items-center">
+            <img src={Logo} alt="Store Logo" className="h-9 w-auto object-contain" />
           </Link>
           <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-emerald-800 lg:hidden">
             Vendor
@@ -939,7 +957,7 @@ const VendorWorkspace = () => {
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <h2 className="text-base font-bold text-slate-900">Your listed products</h2>
-                      <p className="mt-1 text-sm text-slate-500">Products active in your TradeSphere storefront.</p>
+                      <p className="mt-1 text-sm text-slate-500">Products active in your storefront.</p>
                     </div>
                     <button
                       type="button"
@@ -1323,8 +1341,8 @@ const VendorWorkspace = () => {
                 </h2>
                 <p className="mt-1 text-sm text-slate-500">
                   {editingProductId
-                    ? 'Update the product details, image, and video showcase in your TradeSphere catalogue.'
-                    : 'Upload a product image and optional product video to Cloudinary and publish to TradeSphere.'}
+                    ? 'Update the product details, image, and video showcase in your catalogue.'
+                    : 'Upload a product image and optional product video to Cloudinary and publish to the marketplace.'}
                 </p>
               </div>
               <button
@@ -1425,14 +1443,19 @@ const VendorWorkspace = () => {
               <div className="grid gap-4 sm:grid-cols-2">
                 <label className="block text-sm font-semibold text-slate-700">
                   Category
-                  <input
+                  <select
                     required
                     name="category"
                     value={formValues.category}
                     onChange={handleFieldChange('category')}
-                    placeholder="e.g. Fashion & Accessories"
-                    className="mt-1.5 h-11 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-emerald-700"
-                  />
+                    className="mt-1.5 h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none focus:border-emerald-700"
+                  >
+                    {PRODUCT_CATEGORIES.map((categoryOption) => (
+                      <option key={categoryOption} value={categoryOption}>
+                        {categoryOption}
+                      </option>
+                    ))}
+                  </select>
                 </label>
                 <label className="block text-sm font-semibold text-slate-700">
                   SKU <span className="font-normal text-slate-400">(optional)</span>
@@ -1641,7 +1664,7 @@ const VendorWorkspace = () => {
                 </span>
               </div>
               <div className="flex justify-between text-slate-600">
-                <span>TradeSphere Platform Fee (15%):</span>
+                <span>Platform Fee (15%):</span>
                 <span className="font-semibold text-rose-600">
                   -{formatPrice ? formatPrice(platformFeeOnAvailable) : `₦${platformFeeOnAvailable.toFixed(2)}`}
                 </span>
