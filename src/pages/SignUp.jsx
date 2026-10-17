@@ -123,7 +123,7 @@ const SignUp = () => {
           onChange={updateValue('email')}
           autoComplete="email"
           inputMode="email"
-          placeholder="you@company.com"
+          placeholder="Your email address"
           error={errors.email}
         />
         <AuthField
