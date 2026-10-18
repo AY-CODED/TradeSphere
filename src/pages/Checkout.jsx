@@ -7,7 +7,7 @@ import { useCart } from '../hooks/useCart';
 import { useAuth } from '../hooks/useAuth';
 
 const deliveryOptions = [
-  { id: 'standard', name: 'Standard delivery', detail: '4–7 business days · TradeSphere Verified Logistics', price: 45 },
+  { id: 'standard', name: 'Standard delivery', detail: '4–7 business days · KuroMart Verified Logistics', price: 45 },
   { id: 'express', name: 'Express delivery', detail: '2–3 business days · Priority handling', price: 85 },
 ];
 
@@ -78,7 +78,7 @@ const Checkout = () => {
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({
-          email: user?.email || 'customer@tradesphere.com',
+          email: user?.email || 'customer@kuromart.com',
           amount: total,
           callbackUrl: `${window.location.origin}/payment-success`,
         }),
@@ -104,7 +104,7 @@ const Checkout = () => {
           <ArrowLeft className="h-4 w-4" /> Back to cart
         </Link>
         <h1 className="text-3xl font-bold text-slate-900">Secure checkout</h1>
-        <p className="mt-2 text-sm text-slate-500">Complete these steps to finalize your TradeSphere order.</p>
+        <p className="mt-2 text-sm text-slate-500">Complete these steps to finalize your KuroMart order.</p>
 
         {errorMsg && (
           <div role="alert" className="mt-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-800">

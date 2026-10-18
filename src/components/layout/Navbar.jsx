@@ -46,7 +46,8 @@ const Navbar = () => {
       ]
     : baseNavigation;
 
-  const accountName = user?.fullName || user?.name || user?.email || 'Account';
+  const rawAccountName = user?.fullName || user?.name || user?.email || 'Account';
+  const accountName = rawAccountName.includes('@') ? rawAccountName.split('@')[0] : rawAccountName;
   const accountInitials = accountName.split(/\s+/).slice(0, 2).map((part) => part[0]).join('').toUpperCase();
   const unreadCount = notifications.filter((n) => !n.read).length;
   const unreadLabel = unreadCount > 99 ? '99+' : unreadCount;
@@ -142,15 +143,15 @@ const Navbar = () => {
 
   return (
     <header className="sticky top-0 z-50 border-b border-slate-200 bg-[#f8f9fc] shadow-[0_1px_3px_rgba(15,23,42,0.08)]">
-      {/*
-        Layout by breakpoint:
-        - < sm:   logo + actions on row 1, full-width search on row 2
-        - sm–lg:  logo + search + actions in one row, nav lives in the hamburger menu
-        - lg+:    full desktop nav inline
-      */}
       <div className="mx-auto flex max-w-[1600px] flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2 min-[400px]:px-4 sm:flex-nowrap sm:px-6 lg:gap-x-7 lg:px-7">
-        <Link to="/" aria-label="TradeSphere home" className="flex w-[104px] shrink-0 items-center min-[400px]:w-[120px] lg:w-[132px]">
-          <img src={Logo} alt="TradeSphere" className="h-7 w-auto object-contain min-[400px]:h-8" />
+        <Link to="/" aria-label="Kuromart home" className="flex shrink-0 items-center">
+          <span className="inline-flex items-center justify-center rounded-xl bg-slate-950 px-2.5 py-1 shadow-sm ring-1 ring-violet-500/30">
+            <img
+              src={Logo}
+              alt="Kuromart"
+              className="h-7 w-auto object-contain min-[400px]:h-8"
+            />
+          </span>
         </Link>
 
         {/* Single search form, reflowed per breakpoint */}
@@ -182,9 +183,9 @@ const Navbar = () => {
               {label}
             </Link>
           ))}
-          <a href="mailto:support@tradesphere.africa" className="whitespace-nowrap text-xs font-semibold text-slate-800 transition-colors hover:text-emerald-700">
+          <Link to="/account" className="whitespace-nowrap text-xs font-semibold text-slate-800 transition-colors hover:text-emerald-700">
             Support
-          </a>
+          </Link>
         </nav>
 
         <div className="ml-auto flex shrink-0 items-center gap-0.5 sm:gap-2 lg:ml-0 lg:gap-3">
@@ -197,9 +198,9 @@ const Navbar = () => {
             )}
           </Link>
 
-          <a href="mailto:support@tradesphere.africa" aria-label="Messages and support" className={`${iconButton} hidden lg:inline-flex`}>
+          <Link to="/account" aria-label="Messages and support" className={`${iconButton} hidden lg:inline-flex`}>
             <Mail className="h-4 w-4" />
-          </a>
+          </Link>
 
           <button
             type="button"
@@ -211,9 +212,6 @@ const Navbar = () => {
             {theme === 'light' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
           </button>
 
-          {/* Notification Bell & Dropdown.
-              On phones the panel anchors to the full-width header (wrapper is not
-              positioned) so it can never overflow the screen; from sm up it anchors to the bell. */}
           <div ref={notifRef} className="sm:relative">
             <button
               type="button"
@@ -260,7 +258,7 @@ const Navbar = () => {
                 <div className="max-h-[60dvh] divide-y divide-slate-100 overflow-y-auto overscroll-contain sm:max-h-80">
                   {!user ? (
                     <div className="px-4 py-8 text-center text-xs text-slate-500">
-                      Sign in to view your TradeSphere notifications.
+                      Sign in to view your Kuromart notifications.
                     </div>
                   ) : notifications.length === 0 ? (
                     <div className="px-4 py-8 text-center text-xs text-slate-500">
@@ -350,9 +348,9 @@ const Navbar = () => {
                 {label}
               </Link>
             ))}
-            <a href="mailto:support@tradesphere.africa" onClick={() => setIsOpen(false)} className={mobileLink}>
+            <Link to="/account" onClick={() => setIsOpen(false)} className={mobileLink}>
               Support
-            </a>
+            </Link>
             <div className="my-1 border-t border-slate-100" />
             {user ? (
               <>
@@ -375,7 +373,7 @@ const Navbar = () => {
         </nav>
       )}
 
-      <div aria-hidden="true" className="h-[3px] bg-[#c9b8ff]" />
+      <div aria-hidden="true" className="h-[3px] bg-violet-600" />
     </header>
   );
 };

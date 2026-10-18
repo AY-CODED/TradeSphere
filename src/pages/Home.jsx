@@ -160,7 +160,7 @@ const Home = () => {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-8 md:mb-10 gap-4 sm:gap-0">
           <div>
             <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">Available Marketplace Products</h2>
-            <p className="text-sm md:text-base text-gray-500">Live inventory published directly by verified TradeSphere vendors.</p>
+            <p className="text-sm md:text-base text-gray-500">Live inventory published directly by verified KuroMart vendors.</p>
           </div>
           <button
             type="button"
@@ -184,7 +184,7 @@ const Home = () => {
             </div>
             <h3 className="text-base font-bold text-gray-900">No available products yet</h3>
             <p className="mt-1 text-sm text-gray-500">
-              Products published with available stock by TradeSphere vendors will appear here automatically.
+              Products published with available stock by KuroMart vendors will appear here automatically.
             </p>
           </div>
         ) : (
@@ -256,7 +256,7 @@ const Home = () => {
             </h2>
 
             <p className="text-gray-600 text-base md:text-lg mb-8 md:mb-10 max-w-lg leading-relaxed">
-              We've built a multi-layered ecosystem to ensure every trade on TradeSphere is backed by trust. From escrow payments to verified logistics partners.
+              We've built a multi-layered ecosystem to ensure every trade on KuroMart is backed by trust. From escrow payments to verified logistics partners.
             </p>
 
             <div className="space-y-4 w-full max-w-lg mb-8 md:mb-10">
@@ -307,7 +307,7 @@ const Home = () => {
               Ready to scale your<br className="hidden sm:block" /> industrial sourcing or supply?
             </h2>
             <p className="text-green-100 text-sm md:text-lg">
-              Join thousands of African businesses streamlining their trade operations with the TradeSphere ecosystem.
+              Join thousands of African businesses streamlining their trade operations with the KuroMart ecosystem.
             </p>
           </div>
 
@@ -320,7 +320,7 @@ const Home = () => {
               Explore Marketplace
             </button>
             <a
-              href="mailto:sales@tradesphere.africa"
+              href="mailto:sales@kuromart.africa"
               className="w-full sm:w-auto bg-transparent border border-white hover:bg-white/10 text-white font-bold py-3 md:py-4 px-6 md:px-8 rounded-lg transition-colors whitespace-nowrap text-sm md:text-base text-center"
             >
               Talk to Sales

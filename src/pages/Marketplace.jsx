@@ -36,7 +36,7 @@ const Marketplace = () => {
           .filter((item) => Number(item?.stock ?? 0) > 0)
           .map((item) => ({
             ...item,
-            vendor: item.vendorName || item.vendor || 'TradeSphere Vendor',
+            vendor: item.vendorName || item.vendor || 'KuroMart Vendor',
             category: item.category || 'General',
             location: item.location || 'Lagos, Nigeria',
             price: Number(item.price || 0),
@@ -230,7 +230,7 @@ const Marketplace = () => {
 
             <div className="mt-6 rounded-xl bg-slate-900 p-4 text-white">
               <ShieldCheck className="mb-3 h-6 w-6 text-green-400" />
-              <p className="text-sm font-bold">TradeSphere Verified</p>
+              <p className="text-sm font-bold">KuroMart Verified</p>
               <p className="mt-1 text-xs leading-relaxed text-slate-300">Verified vendors pass our operational and identity checks.</p>
             </div>
           </aside>

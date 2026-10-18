@@ -75,7 +75,7 @@ const SignUp = () => {
   };
 
   return (
-    <AuthShell heading="Create your account" description="Join the TradeSphere network and get your business moving.">
+    <AuthShell heading="Create your account" description="Join the KuroMart network and get your business moving.">
       {message && (
         <div role="alert" aria-live="polite" className="mb-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-800">
           {message}

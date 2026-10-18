@@ -33,7 +33,7 @@ const AppRoutes = () => {
       <main role="status" aria-live="polite" className="grid min-h-screen place-items-center bg-[#f3f6fb] px-4">
         <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-6 py-5 text-sm font-semibold text-slate-700 shadow-sm">
           <span aria-hidden="true" className="h-5 w-5 animate-spin rounded-full border-2 border-emerald-700 border-t-transparent" />
-          Connecting To TradeSphere…
+          Connecting To KuroMart…
         </div>
       </main>
     );

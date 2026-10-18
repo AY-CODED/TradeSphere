@@ -77,7 +77,7 @@ export const customerProducts = [
     name: 'Reinforced Logistics Pallet Wraps (Pack of 12)',
     category: 'Logistics Supplies',
     price: 112,
-    vendor: 'TradeSphere Logistics',
+    vendor: 'KuroMart Logistics',
     location: 'Lagos, Nigeria',
     rating: 4.8,
     reviews: 62,

@@ -132,7 +132,7 @@ const OrderConfirmation = () => {
                 {(order.items || []).map((item, idx) => (
                   <article key={item.productId || item.id || idx} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-4">
                     <div className="min-w-0">
-                      <p className="font-bold text-slate-900">{item.vendorName || item.vendor || 'TradeSphere Vendor'}</p>
+                      <p className="font-bold text-slate-900">{item.vendorName || item.vendor || 'KuroMart Vendor'}</p>
                       <p className="mt-1 text-sm text-slate-700">{item.productName || item.name}</p>
                       <p className="mt-1 text-xs text-slate-500">Quantity: {item.quantity}</p>
                     </div>

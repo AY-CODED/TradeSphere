@@ -1,7 +1,7 @@
 import { createContext, useEffect, useMemo, useState } from 'react';
 
 const CartContext = createContext(null);
-const STORAGE_KEY = 'tradesphere-customer-cart';
+const STORAGE_KEY = 'kuroMart-customer-cart';
 
 const loadCart = () => {
   const savedCart = localStorage.getItem(STORAGE_KEY);

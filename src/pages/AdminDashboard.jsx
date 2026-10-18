@@ -291,7 +291,7 @@ const AdminDashboard = () => {
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
     const link = document.createElement('a');
     link.href = url;
-    link.download = `tradesphere-${activeSection}-demo.csv`;
+    link.download = `kuromart-${activeSection}-demo.csv`;
     document.body.append(link);
     link.click();
     link.remove();
@@ -647,7 +647,7 @@ const AdminDashboard = () => {
         <div className="flex items-center gap-3 border-b border-white/10 px-5 py-5">
           <span className="grid h-10 w-10 place-items-center rounded-xl bg-emerald-600 text-lg font-black text-white">T</span>
           <div>
-            <p className="text-sm font-bold text-white">TradeSphere</p>
+            <p className="text-sm font-bold text-white">KuroMart</p>
             <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">Platform owner</p>
           </div>
         </div>
@@ -753,7 +753,7 @@ const AdminDashboard = () => {
 
           {renderSection()}
           <footer className="mt-8 flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 pt-4 text-[11px] text-slate-400">
-            <span>TradeSphere admin · Interface preview</span>
+            <span>KuroMart admin · Interface preview</span>
             <span className="inline-flex items-center gap-1.5"><Clock3 aria-hidden="true" className="h-3.5 w-3.5" /> Updated just now · Sample data</span>
           </footer>
         </main>

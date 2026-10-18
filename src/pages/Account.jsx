@@ -170,7 +170,7 @@ const Account = () => {
       <div className="mx-auto max-w-7xl px-4 py-8 md:px-6 md:py-12">
         <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.16em] text-green-700">Your TradeSphere account</p>
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-green-700">Your KuroMart account</p>
             <h1 className="mt-2 text-3xl font-bold text-slate-900">Profile overview</h1>
             <p className="mt-1 text-sm text-slate-500">
               Manage your personal details and track your {isVendor ? 'seller & buyer' : 'buyer'} activity.
@@ -432,7 +432,7 @@ const Account = () => {
                   </div>
                 ) : (
                   <p className="mt-3 text-sm text-slate-600">
-                    Connected to your live TradeSphere MongoDB account.
+                    Connected to your live KuroMart account.
                   </p>
                 )}
                 <button

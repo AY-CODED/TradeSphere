@@ -1,3 +1,4 @@
+// src/components/layout/Footer.jsx
 import { Globe } from 'lucide-react';
 import Logo from '../../assets/images/Logo.png';
 
@@ -8,11 +9,13 @@ const Footer = () => {
         
         {/* Left Section - Brand & Bio */}
         <div className="flex flex-col items-center lg:items-start text-center lg:text-left max-w-xs">
-          <img 
-            src={Logo} 
-            alt="Brand Logo" 
-            className="h-8 w-auto object-contain mb-3" 
-          />
+          <div className="inline-flex items-center justify-center rounded-xl bg-slate-950 px-3 py-1.5 mb-3 shadow-sm ring-1 ring-violet-500/30">
+            <img 
+              src={Logo} 
+              alt="Kuromart Logo" 
+              className="h-8 w-auto object-contain" 
+            />
+          </div>
           <p className="text-[11px] md:text-xs text-gray-500 leading-relaxed font-medium">
             Empowering the next generation of African trade through digital efficiency and trust-based logistics.
           </p>
@@ -21,12 +24,12 @@ const Footer = () => {
         {/* Middle Section - Links */}
         <div className="flex flex-col items-center gap-4 w-full lg:w-auto">
           <div className="flex flex-wrap justify-center gap-x-4 md:gap-x-6 gap-y-3 text-[10px] sm:text-[11px] font-bold text-slate-700 uppercase tracking-wider">
-            <a href="#" className="hover:text-green-600 transition-colors">Privacy Policy</a>
-            <a href="#" className="hover:text-green-600 transition-colors">Terms of Service</a>
-            <a href="#" className="hover:text-green-600 transition-colors">Buyer Protection</a>
+            <a href="#" className="hover:text-emerald-600 transition-colors">Privacy Policy</a>
+            <a href="#" className="hover:text-emerald-600 transition-colors">Terms of Service</a>
+            <a href="#" className="hover:text-emerald-600 transition-colors">Buyer Protection</a>
           </div>
           <div className="flex justify-center text-[10px] sm:text-[11px] font-bold text-slate-700 uppercase tracking-wider">
-            <a href="#" className="hover:text-green-600 transition-colors">Contact Support</a>
+            <a href="#" className="hover:text-emerald-600 transition-colors">Contact Support</a>
           </div>
         </div>
 
@@ -37,14 +40,14 @@ const Footer = () => {
             <span className="font-medium">English (US)</span>
           </button>
           <div className="text-[10px] text-gray-500 leading-tight text-center sm:text-left">
-            <p>© 2024</p>
-            <p>TradeSphere Inc.</p>
+            <p>© {new Date().getFullYear()}</p>
+            <p>Kuromart Inc.</p>
           </div>
         </div>
 
       </div>
     </footer>
   );
-}
+};
 
 export default Footer;

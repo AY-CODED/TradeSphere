@@ -21,7 +21,7 @@ const request = async (path, { method = 'GET', body } = {}) => {
       body: body ? JSON.stringify(body) : undefined,
     });
   } catch {
-    throw new AuthApiError('Unable to connect to TradeSphere. Check your connection and try again.');
+    throw new AuthApiError('Unable to connect to KuroMart. Check your connection and try again.');
   }
 
   let data = null;

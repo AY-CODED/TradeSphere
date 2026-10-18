@@ -191,7 +191,7 @@ const BusinessVerification = () => {
                 <div>
                   <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">Verification</p>
                   <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">Vendor Compliance</h1>
-                  <p className="mt-2 text-sm text-slate-500">Complete verification to start trading on the TradeSphere ecosystem.</p>
+                  <p className="mt-2 text-sm text-slate-500">Complete verification to start trading on the KuroMart ecosystem.</p>
                 </div>
                 <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700">
                   <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />

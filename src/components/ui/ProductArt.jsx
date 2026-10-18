@@ -24,7 +24,7 @@ const ProductArt = ({ product, className = '' }) => {
       <div className="flex flex-col items-center p-4 text-center">
         <Package className="h-10 w-10 opacity-75" />
         <span className="mt-2 line-clamp-1 text-xs font-bold uppercase tracking-wider text-emerald-900/70">
-          {product?.category || 'TradeSphere'}
+          {product?.category || 'KuroMart'}
         </span>
       </div>
     </div>

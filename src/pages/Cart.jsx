@@ -11,7 +11,7 @@ const TAX_RATE = 0.05;
 
 const Cart = () => {
   const { items, subtotal, removeItem, updateQuantity } = useCart();
-  const getVendorLabel = (item) => item.vendorName || item.vendor || 'TradeSphere Vendor';
+  const getVendorLabel = (item) => item.vendorName || item.vendor || 'KuroMart Vendor';
   const vendors = [...new Set(items.map(getVendorLabel))];
   const itemCount = items.reduce((total, item) => total + item.quantity, 0);
   const tax = subtotal * TAX_RATE;
@@ -129,7 +129,7 @@ const Cart = () => {
                       ))}
                     </div>
                     <div className="flex items-center gap-2 border-t border-slate-100 bg-slate-50 px-5 py-3 text-xs text-slate-500">
-                      <Truck className="h-4 w-4 text-teal-700" /> TradeSphere Verified Logistics coordinates your fulfillment.
+                      <Truck className="h-4 w-4 text-teal-700" /> KuroMart Verified Logistics coordinates your fulfillment.
                     </div>
                   </section>
                 );
@@ -174,7 +174,7 @@ const Cart = () => {
                 <ShieldCheck className="h-4 w-4 text-green-700" /> Secure payment protected by escrow
               </div>
               <div className="mt-5 rounded-xl border border-green-200 bg-green-50 p-4">
-                <p className="text-xs font-bold uppercase tracking-wide text-green-800">TradeSphere escrow</p>
+                <p className="text-xs font-bold uppercase tracking-wide text-green-800">KuroMart escrow</p>
                 <p className="mt-1 text-xs leading-relaxed text-slate-600">
                   Your payment is held securely and only released after you confirm receipt.
                 </p>

@@ -3,50 +3,78 @@
 
 :root {
   color-scheme: light;
-  --brand-600: #16a34a;
-  --brand-700: #047857;
-  --brand-800: #065f46;
-  --theme-page: #f3f6fb;
+  --brand-50: #f5f3ff;
+  --brand-100: #ede9fe;
+  --brand-200: #ddd6fe;
+  --brand-300: #c4b5fd;
+  --brand-400: #a78bfa;
+  --brand-500: #8b5cf6;
+  --brand-600: #7c3aed;
+  --brand-700: #6d28d9;
+  --brand-800: #5b21b6;
+  --brand-900: #4c1d95;
+  --brand-950: #2e1065;
+  --theme-page: #f5f3ff;
   --theme-surface: #ffffff;
   --theme-surface-muted: #f8fafc;
-  --theme-header: #f8f9fc;
-  --theme-search: #e2f3eb;
+  --theme-header: #faf8ff;
+  --theme-search: #ede9fe;
   --theme-text-primary: #0f172a;
   --theme-text-secondary: #475569;
   --theme-text-muted: #64748b;
   --theme-border: #e2e8f0;
   --theme-border-subtle: #f1f5f9;
-  --theme-success-surface: #f0fdf4;
-  --theme-success-soft: #dcfce7;
-  --theme-success-border: #bbf7d0;
+  --theme-success-surface: #f5f3ff;
+  --theme-success-soft: #ede9fe;
+  --theme-success-border: #ddd6fe;
 }
 
 [data-theme='dark'] {
   color-scheme: dark;
-  --theme-page: #0b1220;
-  --theme-surface: #151d2b;
-  --theme-surface-muted: #101827;
-  --theme-header: #111a28;
-  --theme-search: #1b302c;
+  --theme-page: #09090f;
+  --theme-surface: #13111c;
+  --theme-surface-muted: #0e0c16;
+  --theme-header: #100e19;
+  --theme-search: #1e1633;
   --theme-text-primary: #f1f5f9;
   --theme-text-secondary: #cbd5e1;
   --theme-text-muted: #94a3b8;
-  --theme-border: #334155;
-  --theme-border-subtle: #273449;
-  --theme-success-surface: #102b25;
-  --theme-success-soft: #153b30;
-  --theme-success-border: #24634b;
+  --theme-border: #2e2645;
+  --theme-border-subtle: #221c35;
+  --theme-success-surface: #1b1332;
+  --theme-success-soft: #261b47;
+  --theme-success-border: #4c1d95;
 }
 
 @theme {
   --font-sans: "Poppins", "Montserrat", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   --font-poppins: "Poppins", sans-serif;
   --font-montserrat: "Montserrat", sans-serif;
+
+  /* Map green & emerald utility classes directly to Kuromart violet/purple */
+  --color-green-50: var(--brand-50);
+  --color-green-100: var(--brand-100);
+  --color-green-200: var(--brand-200);
+  --color-green-300: var(--brand-300);
+  --color-green-400: var(--brand-400);
+  --color-green-500: var(--brand-500);
   --color-green-600: var(--brand-600);
   --color-green-700: var(--brand-700);
   --color-green-800: var(--brand-800);
+  --color-green-900: var(--brand-900);
+  --color-green-950: var(--brand-950);
+
+  --color-emerald-50: var(--brand-50);
+  --color-emerald-100: var(--brand-100);
+  --color-emerald-200: var(--brand-200);
+  --color-emerald-300: var(--brand-300);
+  --color-emerald-400: var(--brand-400);
+  --color-emerald-500: var(--brand-500);
+  --color-emerald-600: var(--brand-600);
   --color-emerald-700: var(--brand-700);
   --color-emerald-800: var(--brand-800);
+  --color-emerald-900: var(--brand-900);
+  --color-emerald-950: var(--brand-950);
 }
 
 body {
@@ -57,6 +85,15 @@ body {
   background-color: var(--theme-page);
   color: var(--theme-text-primary);
   transition: background-color 160ms ease, color 160ms ease;
+}
+
+/* Override legacy hardcoded green/mint hex backgrounds to match Kuromart purple */
+.bg-\[\#e2f3eb\] {
+  background-color: var(--theme-search) !important;
+}
+
+.bg-\[\#f5f7f6\] {
+  background-color: var(--theme-page) !important;
 }
 
 :is(
@@ -73,7 +110,8 @@ body {
   [data-theme='dark'] .bg-gray-100,
   [data-theme='dark'] .bg-\[\#f3f6fb\],
   [data-theme='dark'] .bg-\[\#f6f8fc\],
-  [data-theme='dark'] .bg-\[\#f8fafd\]
+  [data-theme='dark'] .bg-\[\#f8fafd\],
+  [data-theme='dark'] .bg-\[\#f5f7f6\]
 ) {
   background-color: var(--theme-surface-muted);
 }
@@ -82,9 +120,12 @@ body {
   [data-theme='dark'] .bg-green-50,
   [data-theme='dark'] .bg-emerald-50,
   [data-theme='dark'] .bg-teal-50,
+  [data-theme='dark'] .bg-violet-50,
   [data-theme='dark'] .bg-green-50\/60,
   [data-theme='dark'] .bg-green-50\/70,
-  [data-theme='dark'] .bg-emerald-50\/60
+  [data-theme='dark'] .bg-emerald-50\/60,
+  [data-theme='dark'] .bg-emerald-50\/70,
+  [data-theme='dark'] .bg-emerald-50\/40
 ) {
   background-color: var(--theme-success-surface);
 }
@@ -92,7 +133,8 @@ body {
 :is(
   [data-theme='dark'] .bg-green-100,
   [data-theme='dark'] .bg-emerald-100,
-  [data-theme='dark'] .bg-teal-100
+  [data-theme='dark'] .bg-teal-100,
+  [data-theme='dark'] .bg-violet-100
 ) {
   background-color: var(--theme-success-soft);
 }
@@ -131,7 +173,8 @@ body {
   [data-theme='dark'] .border-gray-200,
   [data-theme='dark'] .border-green-200,
   [data-theme='dark'] .border-emerald-200,
-  [data-theme='dark'] .border-teal-200
+  [data-theme='dark'] .border-teal-200,
+  [data-theme='dark'] .border-violet-200
 ) {
   border-color: var(--theme-border);
 }
@@ -144,7 +187,7 @@ body {
 }
 
 [data-theme='dark'] .bg-\[\#e2f3eb\] {
-  background-color: var(--theme-search);
+  background-color: var(--theme-search) !important;
 }
 
 [data-theme='dark'] .bg-\[\#f8f9fc\] {
@@ -157,7 +200,6 @@ body {
   .bg-yellow-50,
   .bg-red-50,
   .bg-rose-50,
-  .bg-violet-50,
   .bg-orange-50\/60,
   .bg-amber-50\/60
 ) {
@@ -169,8 +211,7 @@ body {
   .bg-amber-100,
   .bg-yellow-100,
   .bg-red-100,
-  .bg-rose-100,
-  .bg-violet-100
+  .bg-rose-100
 ) {
   background-color: var(--theme-surface);
 }
@@ -180,15 +221,17 @@ body {
   .border-amber-200,
   .border-yellow-200,
   .border-red-200,
-  .border-rose-200,
-  .border-violet-200
+  .border-rose-200
 ) {
   border-color: var(--theme-border);
 }
 
 [data-theme='dark'] .bg-green-50.border-green-200,
 [data-theme='dark'] .bg-green-50\/60.border-green-200,
-[data-theme='dark'] .bg-green-50\/70.border-green-200 {
+[data-theme='dark'] .bg-green-50\/70.border-green-200,
+[data-theme='dark'] .bg-emerald-50.border-emerald-200,
+[data-theme='dark'] .bg-emerald-50\/60.border-emerald-200,
+[data-theme='dark'] .bg-emerald-50\/70.border-emerald-200 {
   border-color: var(--theme-success-border);
 }
 

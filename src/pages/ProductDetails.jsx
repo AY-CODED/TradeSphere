@@ -37,7 +37,7 @@ const ProductDetails = () => {
         }
         setProduct({
           ...data,
-          vendor: data.vendorName || data.vendor || 'TradeSphere Vendor',
+          vendor: data.vendorName || data.vendor || 'KuroMart Vendor',
           category: data.category || 'General',
           location: data.location || 'Lagos, Nigeria',
           price: Number(data.price || 0),
@@ -170,7 +170,7 @@ const ProductDetails = () => {
                 <span className="text-xs text-slate-500">Available: {product.stock} units</span>
               </div>
               <p className="mt-2 text-sm leading-relaxed text-slate-600">
-                {product.description || 'Verified product listed by a registered TradeSphere supplier.'}
+                {product.description || 'Verified product listed by a registered KuroMart supplier.'}
               </p>
               <div className="mt-4 flex flex-wrap gap-2">
                 {['Business grade', 'Quality checked', 'Escrow protected'].map((item) => (

@@ -51,7 +51,7 @@ const SignIn = () => {
   };
 
   return (
-    <AuthShell heading="Sign in to your account" description="Enter your details to continue to your TradeSphere workspace.">
+    <AuthShell heading="Sign in to your account" description="Enter your details to continue to your KuroMart workspace.">
       {location.state?.message && (
         <p role="status" className="mb-5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
           {location.state.message}
@@ -94,7 +94,7 @@ const SignIn = () => {
         </button>
       </form>
       <p className="mt-6 text-center text-sm text-slate-600">
-        New to TradeSphere?{' '}
+        New to KuroMart?{' '}
         <Link to="/signup" className="font-bold text-emerald-800 underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-emerald-700">
           Create an account
         </Link>

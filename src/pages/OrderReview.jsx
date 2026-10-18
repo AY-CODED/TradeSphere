@@ -54,7 +54,7 @@ const OrderReview = () => {
     firstItem?.videoUrl ||
     (order?.id && typeof window !== 'undefined' ? localStorage.getItem(`ts_packing_video_${order.id}`) : '');
 
-  const rawVendorName = firstItem.vendorName || 'Verified TradeSphere Vendor';
+  const rawVendorName = firstItem.vendorName || 'Verified KuroMart Vendor';
   const cleanVendorName = rawVendorName.includes('@') ? rawVendorName.split('@')[0] : rawVendorName;
 
   const allChecked = checked.length === checklistItems.length;

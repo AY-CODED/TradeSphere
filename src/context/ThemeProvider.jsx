@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ThemeContext } from './ThemeContext';
 
-const STORAGE_KEY = 'tradesphere-theme';
+const STORAGE_KEY = 'kuromart-theme';
 
 const getInitialTheme = () => {
   const savedTheme = localStorage.getItem(STORAGE_KEY);
